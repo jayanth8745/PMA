@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Personal Memory Assistant</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════════ -->
+<nav class="navbar">
+  <button id="sidebarToggle" class="hamburger-btn" title="Open menu"><i class="fas fa-bars"></i></button>
+
+  <div class="nav-brand">
+    <div class="brand-icon"><i class="fas fa-brain"></i></div>
+    <span>Personal Memory Assistant</span>
+  </div>
+
+  <div class="nav-spacer"></div>
+
+  <a href="index.html" class="nav-pill"><i class="fas fa-home fa-sm"></i> Home</a>
+  <button id="darkModeToggle" class="dark-mode-toggle" title="Toggle Dark Mode"><i class="fas fa-moon"></i></button>
+
+  <div class="user-avatar-wrap">
+    <div class="user-avatar"><i class="fas fa-user fa-sm"></i></div>
+    <span id="userName">User</span>
+  </div>
+
+  <a href="#" id="logoutLink" class="nav-pill logout"><i class="fas fa-sign-out-alt fa-sm"></i> Logout</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <button class="sidebar-return" id="sidebarReturn" type="button">
+    <i class="fas fa-arrow-left"></i>
+    <span>Return</span>
+  </button>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main Features</div>
+    <a class="sidebar-link" href="#section-memory-creation" onclick="smoothTo('section-memory-creation')">
+      <i class="fas fa-plus-circle"></i> Create New Memory
+    </a>
+    <a class="sidebar-link" href="#section-memory-search" onclick="smoothTo('section-memory-search')">
+      <i class="fas fa-search"></i> Search Memory
+    </a>
+    <a class="sidebar-link" href="#section-recent-memories" onclick="smoothTo('section-recent-memories')">
+      <i class="fas fa-clock"></i> Recent Memories
+    </a>
+    <a class="sidebar-link" href="#section-tasks" onclick="smoothTo('section-tasks')">
+      <i class="fas fa-check-square"></i> Task Management
+      <span class="badge" id="sidebar-task-count">0</span>
+    </a>
+    <a class="sidebar-link" href="#section-last-memories" onclick="smoothTo('section-last-memories')">
+      <i class="fas fa-list"></i> Last 5 Memories
+    </a>
+    <a class="sidebar-link" href="#section-voice" onclick="smoothTo('section-voice')">
+      <i class="fas fa-comments"></i> Chat Assistant
+    </a>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Account</div>
+    <a class="sidebar-link" href="#"><i class="fas fa-cog"></i> Settings</a>
+    <a class="sidebar-link logout" href="#" id="sidebarLogout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </div>
+
+  <!-- Quick stats in sidebar -->
+  <div class="sidebar-divider"></div>
+  <div style="padding:.5rem;font-size:.72rem;color:var(--text-muted);line-height:2;">
+    <div>Tasks pending: <b id="sb-tasks" style="color:var(--cyan)">0</b></div>
+    <div>Total expenses: <b id="sb-expenses" style="color:var(--pink)">$0</b></div>
+    <div>Memories saved: <b id="sb-memories" style="color:var(--violet)">0</b></div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════════
+     PAGE CONTENT
+═══════════════════════════════════════════════ -->
+<div class="page-wrap">
+
+  <!-- ── Welcome ── -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.8rem;">
+    <div>
+      <h1 style="font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+        Welcome back, <span id="userDisplayName">User</span>!
+      </h1>
+      <p style="font-size:.82rem;color:var(--text-muted);margin-top:.25rem;">Here's your productivity hub for today.</p>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+      <button class="btn-neon" id="quickAddMemory"><i class="fas fa-plus"></i> Quick Memory</button>
+      <button class="btn-neon violet" id="voiceAddMemory"><i class="fas fa-microphone"></i> Voice Add</button>
+    </div>
+  </div>
+
+  <!-- ── Stats Row ── -->
+  <div class="stats-row">
+    <div class="stat-card glass stat-cyan">
+      <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+      <div class="stat-info"><h3 id="totalMemories">0</h3><p>Total Memories</p></div>
+    </div>
+    <div class="stat-card glass stat-violet">
+      <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+      <div class="stat-info"><h3 id="statTasksDone">0</h3><p>Tasks Done</p></div>
+    </div>
+    <div class="stat-card glass stat-pink">
+      <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+      <div class="stat-info"><h3 id="statExpenses">$0</h3><p>Total Spent</p></div>
+    </div>
+    <div class="stat-card glass stat-green">
+      <div class="stat-icon"><i class="fas fa-clock"></i></div>
+      <div class="stat-info"><h3 id="recentMemories">0</h3><p>This Week</p></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════
+       NEW AI DASHBOARD GRID
+  ══════════════════════ -->
+  <div class="dashboard-grid memory-grid">
+      <!-- Memory Creation Panel -->
+      <section class="dashboard-panel" id="section-memory-creation">
+        <div class="panel-header">
+          <h2><i class="fas fa-plus-circle"></i> Create New Memory</h2>
+        </div>
+        <div class="panel-content">
+          <form id="memoryForm" class="memory-form" autocomplete="off">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="memoryTitle">Title</label>
+                <input type="text" id="memoryTitle" placeholder="Memory title..." required />
+              </div>
+              <div class="form-group">
+                <label for="memoryDate">Date</label>
+                <input type="date" id="memoryDate" required />
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:.7rem;">
+              <label for="memoryDescription">Description</label>
+              <textarea id="memoryDescription" rows="3" placeholder="Describe your memory..." required></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="memoryMood">Mood</label>
+                <select id="memoryMood">
+                  <option value="neutral">😐 Neutral</option>
+                  <option value="happy">😊 Happy</option>
+                  <option value="sad">😢 Sad</option>
+                  <option value="angry">😠 Angry</option>
+                  <option value="excited">🤩 Excited</option>
+                  <option value="peaceful">😌 Peaceful</option>
+                  <option value="love">❤️ Love</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="memoryCategory">Category</label>
+                <select id="memoryCategory">
+                  <option value="general">General</option>
+                  <option value="work">Work</option>
+                  <option value="family">Family</option>
+                  <option value="friends">Friends</option>
+                  <option value="travel">Travel</option>
+                  <option value="food">Food</option>
+                  <option value="health">Health</option>
+                  <option value="education">Education</option>
+                  <option value="hobby">Hobby</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:.7rem;">
+              <label for="memoryTags">Tags (comma separated)</label>
+              <input type="text" id="memoryTags" placeholder="important, urgent, birthday..." />
+            </div>
+            <button type="submit" class="btn-neon full btn-full"><i class="fas fa-save"></i> Save Memory</button>
+          </form>
+        </div>
+      </section>
+
+            <!-- Search Panel -->
+      <section class="dashboard-panel" id="section-memory-search">
+        <div class="panel-header">
+          <h2><i class="fas fa-search"></i> Search Memories</h2>
+        </div>
+        <div class="panel-content">
+          <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Search your memories..." />
+          </div>
+          <div class="filter-options">
+            <select id="categoryFilter">
+              <option value="">All Categories</option>
+              <option value="general">General</option>
+              <option value="work">Work</option>
+              <option value="family">Family</option>
+              <option value="friends">Friends</option>
+              <option value="travel">Travel</option>
+              <option value="food">Food</option>
+              <option value="health">Health</option>
+              <option value="education">Education</option>
+              <option value="hobby">Hobby</option>
+            </select>
+            <select id="moodFilter">
+              <option value="">All Moods</option>
+              <option value="neutral">😐 Neutral</option>
+              <option value="happy">😊 Happy</option>
+              <option value="sad">😢 Sad</option>
+              <option value="angry">😠 Angry</option>
+              <option value="excited">🤩 Excited</option>
+              <option value="peaceful">😌 Peaceful</option>
+              <option value="love">❤️ Love</option>
+            </select>
+          </div>
+          <div id="searchResults" class="search-results"></div>
+        </div>
+      </section>
+
+      <!-- Recent Memories Panel -->
+      <section class="dashboard-panel" id="section-recent-memories">
+        <div class="panel-header">
+          <h2><i class="fas fa-clock"></i> Recent Memories</h2>
+        </div>
+        <div class="panel-content">
+          <div id="recentMemoriesList" class="memories-list">
+            <div class="empty-state"><i class="fas fa-clock"></i>No memories yet.</div>
+          </div>
+        </div>
+      </section>
+
+          <!-- Last 5 Memories -->
+    <div class="panel glass" id="section-last-memories">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-brain"></i> Last 5 Memories</span>
+        <button class="panel-action violet" id="addQuickNote"><i class="fas fa-sticky-note"></i> Note</button>
+      </div>
+      <div class="mem-list" id="memList">
+        <div class="empty-state"><i class="fas fa-brain"></i>No memories yet.</div>
+      </div>
+    </div>
+  </div>
+    
+  <!-- ── TASKS ── -->
+  <div class="section-heading" id="section-tasks" style="scroll-margin-top:80px;">
+    <h2><i class="fas fa-check-square"></i> Task Management</h2>
+    <span style="font-size:.75rem;color:var(--text-muted);" id="task-count-label">0 tasks</span>
+  </div>
+  <div class="dash-grid">
+    <!-- Task add + list -->
+    <div class="panel glass">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-list"></i> My Tasks</span>
+        <button class="panel-action" id="clearDoneTasks"><i class="fas fa-broom"></i> Clear Done</button>
+      </div>
+      <!-- Add row -->
+      <div class="task-add-row">
+        <input class="inp" id="taskInput" placeholder="New task..." style="flex:2;" />
+        <select class="inp" id="taskCat" style="flex:1;min-width:100px;">
+          <option value="work">Work</option>
+          <option value="study">Study</option>
+          <option value="personal">Personal</option>
+          <option value="finance">Finance</option>
+        </select>
+        <select class="inp" id="taskPriority" style="flex:1;min-width:90px;">
+          <option value="high">🔴 High</option>
+          <option value="medium" selected>🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
+        <button class="btn-neon" id="addTaskBtn"><i class="fas fa-plus"></i></button>
+      </div>
+      <!-- Category filter pills -->
+      <div class="cat-pills">
+        <button type="button" class="cat-pill cat-all active" data-filter="all">All</button>
+        <button type="button" class="cat-pill cat-work" data-filter="work">Work</button>
+        <button type="button" class="cat-pill cat-study" data-filter="study">Study</button>
+        <button type="button" class="cat-pill cat-personal" data-filter="personal">Personal</button>
+        <button type="button" class="cat-pill cat-finance" data-filter="finance">Finance</button>
+      </div>
+      <!-- List -->
+      <div class="task-list" id="taskList">
+        <div class="empty-state"><i class="fas fa-check-circle"></i>No tasks yet. Add one above!</div>
+      </div>
+    </div>
+
+    <!-- Task stats mini -->
+    <div class="panel glass">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-chart-pie"></i> Task Overview</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1rem;">
+        <div style="padding:.9rem;border-radius:12px;background:rgba(0,245,255,.07);border:1px solid rgba(0,245,255,.2);text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--cyan);" id="ov-total">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">Total</div>
+        </div>
+        <div style="padding:.9rem;border-radius:12px;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.2);text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--green);" id="ov-done">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">Done</div>
+        </div>
+        <div style="padding:.9rem;border-radius:12px;background:rgba(255,45,155,.07);border:1px solid rgba(255,45,155,.2);text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--pink);" id="ov-pending">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">Pending</div>
+        </div>
+        <div style="padding:.9rem;border-radius:12px;background:rgba(123,47,255,.07);border:1px solid rgba(123,47,255,.2);text-align:center;">
+          <div style="font-size:1.8rem;font-weight:800;color:var(--violet);" id="ov-high">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">High Priority</div>
+        </div>
+      </div>
+      <!-- Completion bar -->
+      <div style="margin-bottom:.5rem;font-size:.78rem;display:flex;justify-content:space-between;">
+        <span>Completion</span><span id="completion-pct" style="color:var(--cyan);">0%</span>
+      </div>
+      <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;">
+        <div id="completion-bar" style="height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--violet));width:0%;transition:width .8s ease;box-shadow:0 0 10px rgba(0,245,255,.4);"></div>
+      </div>
+      <!-- Category breakdown -->
+      <div style="margin-top:1rem;" id="cat-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- ── EXPENSES ── -->
+  <div class="section-heading" id="section-expenses" style="scroll-margin-top:80px;margin-top:1.5rem;">
+    <h2><i class="fas fa-wallet"></i> Expense Tracker</h2>
+    <span style="font-size:.75rem;color:var(--text-muted);">Track your spending</span>
+  </div>
+  <div class="dash-grid">
+    <!-- Add + list -->
+    <div class="panel glass">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-receipt"></i> Transactions</span>
+        <button class="panel-action pink" id="addExpenseToggle"><i class="fas fa-plus"></i> Add</button>
+      </div>
+      <!-- Add form (hidden by default) -->
+      <div id="expenseForm" style="display:none;margin-bottom:.9rem;padding:.9rem;border-radius:12px;background:rgba(255,45,155,.05);border:1px solid rgba(255,45,155,.15);">
+        <div class="inp-row" style="margin-bottom:.6rem;">
+          <input class="inp" id="expTitle" placeholder="Description..." style="flex:2;" />
+          <input class="inp" id="expAmount" type="number" placeholder="Amount" style="flex:1;min-width:90px;" />
+        </div>
+        <div class="inp-row" style="margin-bottom:.6rem;">
+          <select class="inp" id="expType">
+            <option value="expense">💸 Expense</option>
+            <option value="income">💰 Income</option>
+          </select>
+          <select class="inp" id="expCat">
+            <option value="food">🍔 Food</option>
+            <option value="entertainment">🎬 Entertainment</option>
+            <option value="utilities">💡 Utilities</option>
+            <option value="transport">🚗 Transport</option>
+            <option value="health">💊 Health</option>
+            <option value="shopping">🛍️ Shopping</option>
+            <option value="salary">💼 Salary</option>
+            <option value="other">📦 Other</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn-neon pink full" id="saveExpenseBtn"><i class="fas fa-save"></i> Save Transaction</button>
+          <button class="btn-neon full" id="cancelExpenseBtn" style="max-width:100px;">Cancel</button>
+        </div>
+      </div>
+      <!-- Last 5 transactions -->
+      <div class="expense-list" id="expenseList">
+        <div class="empty-state"><i class="fas fa-receipt"></i>No transactions yet.</div>
+      </div>
+    </div>
+
+    <!-- Spending breakdown -->
+    <div class="panel glass">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-chart-bar"></i> Spending Breakdown</span>
+      </div>
+      <div style="display:flex;gap:1rem;margin-bottom:1rem;">
+        <div style="flex:1;padding:.8rem;border-radius:12px;background:rgba(0,245,255,.07);border:1px solid rgba(0,245,255,.2);text-align:center;">
+          <div style="font-size:.72rem;color:var(--text-muted);">Total Income</div>
+          <div style="font-size:1.2rem;font-weight:800;color:var(--cyan);" id="total-income">$0.00</div>
+        </div>
+        <div style="flex:1;padding:.8rem;border-radius:12px;background:rgba(255,45,155,.07);border:1px solid rgba(255,45,155,.2);text-align:center;">
+          <div style="font-size:.72rem;color:var(--text-muted);">Total Spent</div>
+          <div style="font-size:1.2rem;font-weight:800;color:var(--pink);" id="total-expense">$0.00</div>
+        </div>
+        <div style="flex:1;padding:.8rem;border-radius:12px;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.2);text-align:center;">
+          <div style="font-size:.72rem;color:var(--text-muted);">Balance</div>
+          <div style="font-size:1.2rem;font-weight:800;color:var(--green);" id="balance">$0.00</div>
+        </div>
+      </div>
+      <div id="spendBreakdown"></div>
+    </div>
+  </div>
+
+  <!-- ── CHARTS ── -->
+  <div class="section-heading" id="section-charts" style="scroll-margin-top:80px;margin-top:1.5rem;">
+    <h2><i class="fas fa-chart-line"></i> Analytics</h2>
+  </div>
+  <div class="dash-grid">
+    <div class="panel glass">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-chart-bar"></i> Expense Chart</span>
+        <div class="chart-tabs">
+          <button class="chart-tab active" data-chart="bar">Bar</button>
+          <button class="chart-tab" data-chart="line">Line</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="expenseChart"></canvas></div>
+    </div>
+    <div class="panel glass">
+      <div class="panel-header">
+        <span class="panel-title"><i class="fas fa-chart-pie"></i> Task Completion</span>
+      </div>
+      <div class="chart-wrap"><canvas id="taskChart"></canvas></div>
+    </div>
+  </div>
+  <!-- ── CHATBOT ── -->
+<section class="chat-assistant" id="section-voice">
+
+    <!-- Header -->
+    <div class="chat-header">
+
+        <div class="chat-header-info">
+            <div class="chat-header-title">
+                Chat Assistant
+            </div>
+
+            <div class="chat-header-sub">
+                Local AI • Ollama Connected
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Messages -->
+    <div id="chatBody" class="chat-body">
+
+        <div class="chat-msg bot">
+            Hello 👋 How can I help you?
+        </div>
+
+    </div>
+
+    <!-- Input -->
+    <div class="chat-input-row">
+
+        <input
+            type="text"
+            id="chatInput"
+            placeholder="Type your message..."
+        >
+
+        <button
+            class="chat-send-btn"
+            onclick="sendMessage()"
+        >
+            ➤
+        </button>
+
+    </div>
+
+</section>
+
+  <!-- ══════════════════════════════
+       ORIGINAL PANELS (preserved)
+  ══════════════════════════════ -->
+  <div class="dashboard-grid legacy-grid">
+      <!-- Mood Panel -->
+      <section class="dashboard-panel full">
+        <div class="panel-header">
+          <h2><i class="fas fa-heart"></i> Mood Tracking</h2>
+        </div>
+        <div class="panel-content">
+          <div class="mood-emojis" id="moodEmojis">
+            <span class="mood-btn" data-mood="happy" title="Happy">😊</span>
+            <span class="mood-btn" data-mood="excited" title="Excited">🤩</span>
+            <span class="mood-btn" data-mood="peaceful" title="Peaceful">😌</span>
+            <span class="mood-btn" data-mood="love" title="Love">❤️</span>
+            <span class="mood-btn" data-mood="neutral" title="Neutral">😐</span>
+            <span class="mood-btn" data-mood="sad" title="Sad">😢</span>
+            <span class="mood-btn" data-mood="angry" title="Angry">😠</span>
+          </div>
+          <div class="mood-wrap"><canvas id="moodChart"></canvas></div>
+        </div>
+      </section>
+      
+            <!-- Calendar Panel -->
+       <section class="dashboard-panel calendar-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-calendar-alt"></i> Memory Calendar</h2>
+                        <button class="panel-toggle" data-panel="calendar">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div class="panel-content">
+                        <div id="miniCalendar" class="mini-calendar">
+                            <!-- Mini calendar will be rendered here -->
+                        </div>
+                    </div>
+                </section>
+  </div>
+</div><!-- /page-wrap -->
+
+<!-- =========================
+VOICE ASSISTANT
+========================= -->
+
+<!-- Floating Button -->
+<button id="voiceToggleBtn" class="voice-toggle-btn" type="button" aria-label="Start voice assistant" aria-pressed="false" onclick="document.body.classList.add('voice-sphere-open');var voiceOverlay=document.getElementById('voiceSphereOverlay');if(voiceOverlay)voiceOverlay.classList.add('active','listening');">
+    🎤
+</button>
+
+<!-- Center Sphere -->
+<div id="voiceSphereOverlay" class="voice-sphere-overlay" aria-live="polite">
+
+    <div id="voiceSphere" class="ai-sphere">
+        <div class="sphere-glow"></div>
+        <div class="sphere-aura"></div>
+        <div class="sphere-body">
+            <div class="sphere-light light1"></div>
+            <div class="sphere-light light2"></div>
+        </div>
+
+    </div>
+
+    <div id="voiceSphereState" class="voice-sphere-state">Tap the mic to start</div>
+
+</div>
+
+<!-- Non-blocking Memory Loading -->
+<div id="memoryLoadingOverlay" class="memory-loading-overlay">
+  <div class="spinner"></div>
+  <span>Creating Memory...</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════ -->
+<script src="config.js" onerror="void 0"></script>
+<script src="script.js" onerror="void 0"></script>
+</body>
+</html>

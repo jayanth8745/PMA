@@ -1,0 +1,21 @@
+{
+  "users": [
+    {
+      "id": "7bcfdce5-4e13-49fd-87f0-aaa93642be5a",
+      "name": "12345 6",
+      "email": "123456@gmail.com",
+      "password": "1234567",
+      "created_at": "2026-04-27T18:09:30.039700Z"
+    },
+    {
+      "id": "ed964ede-ac3d-4e47-9451-e541dee0c6f2",
+      "name": "12345 6",
+      "email": "1234@gmail.com",
+      "password": "1234567",
+      "created_at": "2026-04-27T19:17:58.444314Z"
+    }
+  ],
+  "memories": [],
+  "tasks": [],
+  "expenses": []
+}
