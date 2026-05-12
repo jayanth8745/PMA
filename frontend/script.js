@@ -4077,35 +4077,66 @@ function buildEnhancedCharts() {
       return;
     }
 
-    // Expense Chart
+    // Transaction Chart (Income & Expenses)
     if (expCtx) {
       if (expChartEnhanced) expChartEnhanced.destroy();
-      const byCat = {};
-      ENHANCED_STATE.expenses.filter(e => e.type === 'expense').forEach(e => { 
-        byCat[e.category] = (byCat[e.category] || 0) + e.amount; 
+      const incomeByCat = {};
+      const expenseByCat = {};
+      
+      // Separate income and expenses by category
+      ENHANCED_STATE.expenses.forEach(e => { 
+        if (e.type === 'income') {
+          incomeByCat[e.category] = (incomeByCat[e.category] || 0) + e.amount;
+        } else {
+          expenseByCat[e.category] = (expenseByCat[e.category] || 0) + e.amount;
+        }
       });
-      const labels = Object.keys(byCat);
-      const data = Object.values(byCat);
+      
+      // Get all unique categories from both income and expenses
+      const allCategories = [...new Set([...Object.keys(incomeByCat), ...Object.keys(expenseByCat)])];
+      const labels = allCategories.length ? allCategories : ['No data'];
+      
+      const incomeData = labels.map(cat => incomeByCat[cat] || 0);
+      const expenseData = labels.map(cat => expenseByCat[cat] || 0);
+      
       const colors = labels.map(l => CAT_COLORS[l] || '#a0aec0');
 
       expChartEnhanced = new Chart(expCtx, {
         type: 'bar',
         data: {
           labels: labels.length ? labels : ['No data'],
-          datasets: [{
-            label: 'Expenses (₹)',
-            data: data.length ? data : [0],
-            backgroundColor: colors.map(c => c + '55'),
-            borderColor: colors,
-            borderWidth: 2,
-            borderRadius: 8,
-          }]
+          datasets: [
+            {
+              label: 'Income (₹)',
+              data: incomeData.length ? incomeData : [0],
+              backgroundColor: colors.map(c => c + '55'),
+              borderColor: colors,
+              borderWidth: 2,
+              borderRadius: 8,
+            },
+            {
+              label: 'Expenses (₹)',
+              data: expenseData.length ? expenseData : [0],
+              backgroundColor: colors.map(c => '#ff459b55'),
+              borderColor: colors.map(c => '#ff459b'),
+              borderWidth: 2,
+              borderRadius: 8,
+            }
+          ]
         },
         options: {
           responsive: true, 
           maintainAspectRatio: false,
           plugins: { 
-            legend:{ display:false } 
+            legend:{ 
+              display:true,
+              position:'top',
+              labels:{ 
+                color:'#64748b',
+                font:{ size:12 },
+                padding:20
+              }
+            } 
           },
           scales: {
             x: { 
