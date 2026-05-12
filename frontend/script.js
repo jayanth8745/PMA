@@ -3567,6 +3567,15 @@ function addEnhancedExpense() {
   renderEnhancedExpenses();
   updateEnhancedCharts();
   
+  // Clear input fields after adding
+  document.getElementById('expTitle').value = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expType').value = 'expense';
+  document.getElementById('expCat').value = 'general';
+  document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+  
+  toast('Transaction added successfully!', 'success');
+  
   // Also save to MongoDB if authenticated
   if (authToken && !authToken.startsWith('demo_token_')) {
     apiJson('/expenses', {
