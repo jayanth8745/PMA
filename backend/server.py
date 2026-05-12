@@ -400,9 +400,14 @@ def legacy_chat_routes():
 
 @app.route("/api/memories", methods=["GET", "POST"])
 def memories():
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Authentication required"}, 401)
+    
     if request.method == "POST":
         payload = parse_json()
         document = {
+            "user_id": user_id,
             "title": payload.get("title") or payload.get("content", "Untitled memory")[:60],
             "description": payload.get("description") or payload.get("content") or "",
             "category": payload.get("category") or "general",
@@ -415,7 +420,7 @@ def memories():
         document["_id"] = result.inserted_id
         return ok({"memory": document}, 201)
 
-    query = {}
+    query = {"user_id": user_id}
     search = request.args.get("search") or request.args.get("q")
     category = request.args.get("category")
     mood = request.args.get("mood")
@@ -436,21 +441,34 @@ def memories():
 
 @app.route("/api/memories/<memory_id>", methods=["PUT", "DELETE"])
 def memory_detail(memory_id):
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Authentication required"}, 401)
+    
     if request.method == "DELETE":
-        db.memories.delete_one({"_id": ObjectId(memory_id)})
+        result = db.memories.delete_one({"_id": ObjectId(memory_id), "user_id": user_id})
+        if result.deleted_count == 0:
+            return ok({"error": "Memory not found"}, 404)
         return ok({"deleted": True})
     payload = parse_json()
     payload["updated_at"] = now_utc()
-    db.memories.update_one({"_id": ObjectId(memory_id)}, {"$set": payload})
+    result = db.memories.update_one({"_id": ObjectId(memory_id), "user_id": user_id}, {"$set": payload})
+    if result.matched_count == 0:
+        return ok({"error": "Memory not found"}, 404)
     return ok({"updated": True})
 
 
 @app.route("/api/tasks", methods=["GET", "POST"])
 @app.route("/api/tasks/add", methods=["POST"])
 def tasks():
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Authentication required"}, 401)
+    
     if request.method == "POST":
         payload = parse_json()
         document = {
+            "user_id": user_id,
             "title": payload.get("title") or payload.get("text") or "Untitled task",
             "category": payload.get("category") or "work",
             "priority": payload.get("priority") or "medium",
@@ -461,7 +479,7 @@ def tasks():
         document["_id"] = result.inserted_id
         return ok({"task": document}, 201)
 
-    query = {}
+    query = {"user_id": user_id}
     search = request.args.get("search") or request.args.get("q")
     category = request.args.get("category")
     if search:
@@ -473,21 +491,34 @@ def tasks():
 
 @app.route("/api/tasks/<task_id>", methods=["PUT", "DELETE"])
 def task_detail(task_id):
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Authentication required"}, 401)
+    
     if request.method == "DELETE":
-        db.tasks.delete_one({"_id": ObjectId(task_id)})
+        result = db.tasks.delete_one({"_id": ObjectId(task_id), "user_id": user_id})
+        if result.deleted_count == 0:
+            return ok({"error": "Task not found"}, 404)
         return ok({"deleted": True})
     payload = parse_json()
     payload["updated_at"] = now_utc()
-    db.tasks.update_one({"_id": ObjectId(task_id)}, {"$set": payload})
+    result = db.tasks.update_one({"_id": ObjectId(task_id), "user_id": user_id}, {"$set": payload})
+    if result.matched_count == 0:
+        return ok({"error": "Task not found"}, 404)
     return ok({"updated": True})
 
 
 @app.route("/api/expenses", methods=["GET", "POST"])
 @app.route("/api/expenses/add", methods=["POST"])
 def expenses():
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Authentication required"}, 401)
+    
     if request.method == "POST":
         payload = parse_json()
         document = {
+            "user_id": user_id,
             "title": payload.get("title") or payload.get("description") or "Expense",
             "amount": float(payload.get("amount") or 0),
             "type": payload.get("type") or "expense",
@@ -499,9 +530,9 @@ def expenses():
         document["_id"] = result.inserted_id
         return ok({"expense": document}, 201)
 
+    query = {"user_id": user_id}
     search = request.args.get("search") or request.args.get("q")
     category = request.args.get("category")
-    query = {}
     if search:
         query["title"] = {"$regex": search, "$options": "i"}
     if category and category != "all":
@@ -511,12 +542,20 @@ def expenses():
 
 @app.route("/api/expenses/<expense_id>", methods=["PUT", "DELETE"])
 def expense_detail(expense_id):
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Authentication required"}, 401)
+    
     if request.method == "DELETE":
-        db.expenses.delete_one({"_id": ObjectId(expense_id)})
+        result = db.expenses.delete_one({"_id": ObjectId(expense_id), "user_id": user_id})
+        if result.deleted_count == 0:
+            return ok({"error": "Expense not found"}, 404)
         return ok({"deleted": True})
     payload = parse_json()
     payload["updated_at"] = now_utc()
-    db.expenses.update_one({"_id": ObjectId(expense_id)}, {"$set": payload})
+    result = db.expenses.update_one({"_id": ObjectId(expense_id), "user_id": user_id}, {"$set": payload})
+    if result.matched_count == 0:
+        return ok({"error": "Expense not found"}, 404)
     return ok({"updated": True})
 
 
