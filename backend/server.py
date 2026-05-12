@@ -43,11 +43,31 @@ def doc_id(document):
     return {"_id": ObjectId(document["_id"])} if "_id" in document else {}
 
 
-def collection_context():
+def get_user_id_from_auth():
+    """
+    Extract user mongo ObjectId from Authorization header.
+    Token format comes from this app: local-token-<mongo_id> or google-token-<mongo_id>.
+    """
+    auth = request.headers.get("Authorization") or ""
+    parts = auth.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return None
+    token = parts[1].strip()
+    # local-token-<id> / google-token-<id> / demo_token_<...>
+    if token.startswith(("local-token-", "google-token-")):
+        mongo_id = token.split("-", 2)[-1]
+        try:
+            return ObjectId(mongo_id)
+        except Exception:
+            return None
+    return None
+
+
+def collection_context(user_id):
     try:
-        memories = list(db.memories.find().sort("created_at", -1).limit(8))
-        tasks = list(db.tasks.find().sort("created_at", -1).limit(8))
-        expenses = list(db.expenses.find().sort("created_at", -1).limit(8))
+        memories = list(db.memories.find({"user_id": user_id}).sort("created_at", -1).limit(8))
+        tasks = list(db.tasks.find({"user_id": user_id}).sort("created_at", -1).limit(8))
+        expenses = list(db.expenses.find({"user_id": user_id}).sort("created_at", -1).limit(8))
         return serialize({"memories": memories, "tasks": tasks, "expenses": expenses})
     except Exception as error:
         # Return empty context if MongoDB is not available
@@ -55,14 +75,14 @@ def collection_context():
         return serialize({"memories": [], "tasks": [], "expenses": []})
 
 
-def handle_chat_operation(text):
+def handle_chat_operation(text, user_id):
     lower = text.lower().strip()
     if lower.startswith(("add task", "create task", "new task")):
         title = lower
         for prefix in ("add task", "create task", "new task"):
             title = title.replace(prefix, "", 1).strip()
         title = title or "Untitled task"
-        task = {"title": title, "category": "work", "priority": "medium", "done": False, "created_at": now_utc()}
+        task = {"title": title, "category": "work", "priority": "medium", "done": False, "created_at": now_utc(), "user_id": user_id}
         result = db.tasks.insert_one(task)
         task["_id"] = result.inserted_id
         return {"reply": f'Task added: "{title}".', "task": task}
@@ -79,6 +99,7 @@ def handle_chat_operation(text):
             "category": "other",
             "date": now_utc().date().isoformat(),
             "created_at": now_utc(),
+            "user_id": user_id,
         }
         result = db.expenses.insert_one(expense)
         expense["_id"] = result.inserted_id
@@ -94,24 +115,26 @@ def handle_chat_operation(text):
             "tags": [],
             "date": now_utc().date().isoformat(),
             "created_at": now_utc(),
+            "user_id": user_id,
         }
         result = db.memories.insert_one(memory)
         memory["_id"] = result.inserted_id
         return {"reply": "Memory saved.", "memory": memory}
 
     if "list tasks" in lower or "show tasks" in lower:
-        tasks = list(db.tasks.find().sort("created_at", -1).limit(10))
+        tasks = list(db.tasks.find({"user_id": user_id}).sort("created_at", -1).limit(10))
         titles = [task.get("title", "Untitled task") for task in tasks]
         return {"reply": "Tasks: " + (", ".join(titles) if titles else "none yet."), "tasks": tasks}
 
     if "list expenses" in lower or "show expenses" in lower:
-        expenses = list(db.expenses.find().sort("created_at", -1).limit(10))
+        expenses = list(db.expenses.find({"user_id": user_id}).sort("created_at", -1).limit(10))
         lines = [f"{expense.get('title', 'Expense')} ({expense.get('amount', 0)})" for expense in expenses]
         return {"reply": "Expenses: " + (", ".join(lines) if lines else "none yet."), "expenses": expenses}
 
     if lower.startswith(("search memory", "find memory", "search memories")):
         query = lower.replace("search memories", "", 1).replace("search memory", "", 1).replace("find memory", "", 1).strip()
         memories = list(db.memories.find({
+            "user_id": user_id,
             "$or": [
                 {"title": {"$regex": query, "$options": "i"}},
                 {"description": {"$regex": query, "$options": "i"}},
@@ -293,26 +316,35 @@ def google_register():
 def chat():
     payload = parse_json()
     text = payload.get("message") or payload.get("text") or payload.get("query") or ""
+
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        return ok({"error": "Unauthorized"}, 401)
+
     history = payload.get("history") or []
-    context = payload.get("context") or collection_context()
-    operation = handle_chat_operation(text)
+    context = payload.get("context") or collection_context(user_id)
+
+    # Persist user data (scoped)
+    operation = handle_chat_operation(text, user_id=user_id)
+
     if operation:
         reply = operation["reply"]
     else:
         reply = chat_assistant_reply(text, history=history, context=context)
-    
+
     # Try to save conversation, but don't fail if MongoDB is not available
     try:
         db.conversations.insert_one({
             "type": "chat",
             "model": CHAT_MODEL,
+            "user_id": user_id,
             "user_message": text,
             "assistant_reply": reply,
             "created_at": now_utc(),
         })
     except Exception as error:
         print(f"Failed to save conversation: {error}")
-    
+
     return ok({"reply": reply, "response": reply, "model": CHAT_MODEL, **(operation or {})})
 
 
