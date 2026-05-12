@@ -79,7 +79,7 @@
   <div class="sidebar-divider"></div>
   <div style="padding:.5rem;font-size:.72rem;color:var(--text-muted);line-height:2;">
     <div>Tasks pending: <b id="sb-tasks" style="color:var(--cyan)">0</b></div>
-    <div>Total expenses: <b id="sb-expenses" style="color:var(--pink)">$0</b></div>
+    <div>Total expenses: <b id="sb-expenses" style="color:var(--pink)">₹0</b></div>
     <div>Memories saved: <b id="sb-memories" style="color:var(--violet)">0</b></div>
   </div>
 </aside>
@@ -104,7 +104,11 @@
   </div>
 
   <!-- ── Stats Row ── -->
+
   <div class="stats-row">
+
+
+
     <div class="stat-card glass stat-cyan">
       <div class="stat-icon"><i class="fas fa-check-double"></i></div>
       <div class="stat-info"><h3 id="totalMemories">0</h3><p>Total Memories</p></div>
@@ -113,9 +117,10 @@
       <div class="stat-icon"><i class="fas fa-tasks"></i></div>
       <div class="stat-info"><h3 id="statTasksDone">0</h3><p>Tasks Done</p></div>
     </div>
+
     <div class="stat-card glass stat-pink">
       <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
-      <div class="stat-info"><h3 id="statExpenses">$0</h3><p>Total Spent</p></div>
+      <div class="stat-info"><h3 id="statExpenses">₹0</h3><p>Total Spent</p></div>
     </div>
     <div class="stat-card glass stat-green">
       <div class="stat-icon"><i class="fas fa-clock"></i></div>
@@ -377,15 +382,16 @@
       <div style="display:flex;gap:1rem;margin-bottom:1rem;">
         <div style="flex:1;padding:.8rem;border-radius:12px;background:rgba(0,245,255,.07);border:1px solid rgba(0,245,255,.2);text-align:center;">
           <div style="font-size:.72rem;color:var(--text-muted);">Total Income</div>
-          <div style="font-size:1.2rem;font-weight:800;color:var(--cyan);" id="total-income">$0.00</div>
+
+          <div style="font-size:1.2rem;font-weight:800;color:var(--cyan);" id="total-income">₹0.00</div>
         </div>
         <div style="flex:1;padding:.8rem;border-radius:12px;background:rgba(255,45,155,.07);border:1px solid rgba(255,45,155,.2);text-align:center;">
           <div style="font-size:.72rem;color:var(--text-muted);">Total Spent</div>
-          <div style="font-size:1.2rem;font-weight:800;color:var(--pink);" id="total-expense">$0.00</div>
+          <div style="font-size:1.2rem;font-weight:800;color:var(--pink);" id="total-expense">₹0.00</div>
         </div>
         <div style="flex:1;padding:.8rem;border-radius:12px;background:rgba(0,255,136,.07);border:1px solid rgba(0,255,136,.2);text-align:center;">
           <div style="font-size:.72rem;color:var(--text-muted);">Balance</div>
-          <div style="font-size:1.2rem;font-weight:800;color:var(--green);" id="balance">$0.00</div>
+          <div style="font-size:1.2rem;font-weight:800;color:var(--green);" id="balance">₹0.00</div>
         </div>
       </div>
       <div id="spendBreakdown"></div>

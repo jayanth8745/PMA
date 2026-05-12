@@ -3276,7 +3276,7 @@ document.getElementById('sidebarLogout')?.addEventListener('click', e => {
    UTILITY (enhanced)
 ════════════════════════════════════════════════ */
 const uidEnhanced = () => Math.random().toString(36).slice(2, 10);
-const fmtMoney = n => '$' + Number(n).toFixed(2);
+const fmtMoney = n => '₹' + Number(n).toFixed(2);
 function timeAgoEnhanced(iso) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000), h = Math.floor(diff / 3600000), d = Math.floor(diff / 86400000);
@@ -3782,7 +3782,7 @@ function buildEnhancedCharts() {
       data: {
         labels: labels.length ? labels : ['No data'],
         datasets: [{
-          label: 'Expenses ($)',
+label: 'Expenses (₹)',
           data: data.length ? data : [0],
           backgroundColor: colors.map(c => c + '55'),
           borderColor: colors,
@@ -3795,7 +3795,7 @@ function buildEnhancedCharts() {
         plugins: { legend:{ display:false } },
         scales: {
           x: { grid:{ color:'rgba(255,255,255,.04)' }, ticks:{ color:'#64748b', font:{size:10} } },
-          y: { grid:{ color:'rgba(255,255,255,.06)' }, ticks:{ color:'#64748b', font:{size:10}, callback: v => '$'+v } }
+y: { grid:{ color:'rgba(255,255,255,.06)' }, ticks:{ color:'#64748b', font:{size:10}, callback: v => '₹'+v } }
         }
       }
     });
@@ -3980,7 +3980,7 @@ function processOfflineEnhanced(lower, original) {
       const exp = { id:uidEnhanced(), title: original, amount:parseFloat(match[1]), type:'expense',
         category: catMatch ? catMatch[0] : 'other', date: new Date().toISOString() };
       ENHANCED_STATE.expenses.unshift(exp); saveEnhanced(); renderEnhancedExpenses();
-      return `Expense of $${match[1]} added!`;
+return `Expense of ₹${match[1]} added!`;
     }
     return 'Please say the amount. e.g. "add expense 50 food"';
   }
@@ -4055,7 +4055,7 @@ function answerFromAssistantBrain(lower, original) {
   if (/summary|summarize|overview|what do you know|analyze|analysis|brain/.test(lower)) {
     const pending = context.pending_tasks.length;
     const latest = memories[0]?.content ? ` Latest memory: ${memories[0].content}` : '';
-    return `I found ${context.memory_count} memories, ${pending} pending tasks, and ${fmtMoney(context.total_spent)} in tracked spending.${latest}`;
+return `I found ${context.memory_count} memories, ${pending} pending tasks, and ${fmtMoney(context.total_spent)} in tracked spending.${latest}`;
   }
 
   if (/memory|remember|note|saved|about|find|search|when|what/.test(lower) && matches.length) {
