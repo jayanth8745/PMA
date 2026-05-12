@@ -29,7 +29,10 @@
 
   <div class="user-avatar-wrap">
     <div class="user-avatar"><i class="fas fa-user fa-sm"></i></div>
-    <span id="userName">User</span>
+    <div class="user-info">
+      <span id="userName" class="user-name">Welcome User</span>
+      <span class="user-status">🟢 Online</span>
+    </div>
   </div>
 
   <a href="#" id="logoutLink" class="nav-pill logout"><i class="fas fa-sign-out-alt fa-sm"></i> Logout</a>
@@ -46,12 +49,6 @@
 
   <div class="sidebar-section">
     <div class="sidebar-label">Main Features</div>
-    <a class="sidebar-link" href="#section-memory-creation" onclick="smoothTo('section-memory-creation')">
-      <i class="fas fa-plus-circle"></i> Create New Memory
-    </a>
-    <a class="sidebar-link" href="#section-memory-search" onclick="smoothTo('section-memory-search')">
-      <i class="fas fa-search"></i> Search Memory
-    </a>
     <a class="sidebar-link" href="#section-recent-memories" onclick="smoothTo('section-recent-memories')">
       <i class="fas fa-clock"></i> Recent Memories
     </a>
@@ -97,11 +94,7 @@
       </h1>
       <p style="font-size:.82rem;color:var(--text-muted);margin-top:.25rem;">Here's your productivity hub for today.</p>
     </div>
-    <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
-      <button class="btn-neon" id="quickAddMemory"><i class="fas fa-plus"></i> Quick Memory</button>
-      <button class="btn-neon violet" id="voiceAddMemory"><i class="fas fa-microphone"></i> Voice Add</button>
-    </div>
-  </div>
+      </div>
 
   <!-- ── Stats Row ── -->
 
@@ -262,7 +255,6 @@
     <div class="panel glass">
       <div class="panel-header">
         <span class="panel-title"><i class="fas fa-list"></i> My Tasks</span>
-        <button class="panel-action" id="clearDoneTasks"><i class="fas fa-broom"></i> Clear Done</button>
       </div>
       <!-- Add row -->
       <div class="task-add-row">
@@ -273,11 +265,7 @@
           <option value="personal">Personal</option>
           <option value="finance">Finance</option>
         </select>
-        <select class="inp" id="taskPriority" style="flex:1;min-width:90px;">
-          <option value="high">🔴 High</option>
-          <option value="medium" selected>🟡 Medium</option>
-          <option value="low">🟢 Low</option>
-        </select>
+        <input class="inp" id="taskReminder" placeholder="Set reminder..." style="flex:1;min-width:120px;" />
         <button class="btn-neon" id="addTaskBtn"><i class="fas fa-plus"></i></button>
       </div>
       <!-- Category filter pills -->
@@ -313,8 +301,8 @@
           <div style="font-size:.72rem;color:var(--text-muted);">Pending</div>
         </div>
         <div style="padding:.9rem;border-radius:12px;background:rgba(123,47,255,.07);border:1px solid rgba(123,47,255,.2);text-align:center;">
-          <div style="font-size:1.8rem;font-weight:800;color:var(--violet);" id="ov-high">0</div>
-          <div style="font-size:.72rem;color:var(--text-muted);">High Priority</div>
+          <div style="font-size:1.8rem;font-weight:800;color:var(--violet);" id="ov-reminders">0</div>
+          <div style="font-size:.72rem;color:var(--text-muted);">With Reminders</div>
         </div>
       </div>
       <!-- Completion bar -->
@@ -537,6 +525,68 @@ VOICE ASSISTANT
 <div id="memoryLoadingOverlay" class="memory-loading-overlay">
   <div class="spinner"></div>
   <span>Creating Memory...</span>
+</div>
+
+<!-- Instagram-Style Calendar Popup -->
+<div id="calendarPopup" class="calendar-popup-overlay">
+    <div class="calendar-popup-container">
+        <div class="calendar-popup-header">
+            <div class="calendar-popup-date">
+                <h3 id="popupDateTitle">Loading...</h3>
+                <span id="popupDateSubtitle">Today's Activities</span>
+            </div>
+            <button class="calendar-popup-close" onclick="closeCalendarPopup()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="calendar-popup-content">
+            <!-- Memories Section -->
+            <div class="calendar-section" id="popupMemories">
+                <div class="calendar-section-header">
+                    <i class="fas fa-brain"></i>
+                    <h4>Memories</h4>
+                    <span class="calendar-section-count" id="memoriesCount">0</span>
+                </div>
+                <div class="calendar-section-content" id="memoriesContent">
+                    <div class="calendar-empty-state">
+                        <i class="fas fa-brain"></i>
+                        <p>No memories for this day</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tasks Section -->
+            <div class="calendar-section" id="popupTasks">
+                <div class="calendar-section-header">
+                    <i class="fas fa-tasks"></i>
+                    <h4>Tasks</h4>
+                    <span class="calendar-section-count" id="tasksCount">0</span>
+                </div>
+                <div class="calendar-section-content" id="tasksContent">
+                    <div class="calendar-empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <p>No tasks for this day</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reminders Section -->
+            <div class="calendar-section" id="popupReminders">
+                <div class="calendar-section-header">
+                    <i class="fas fa-bell"></i>
+                    <h4>Reminders</h4>
+                    <span class="calendar-section-count" id="remindersCount">0</span>
+                </div>
+                <div class="calendar-section-content" id="remindersContent">
+                    <div class="calendar-empty-state">
+                        <i class="fas fa-bell"></i>
+                        <p>No reminders for this day</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════

@@ -2482,19 +2482,6 @@ async function loadDashboardData() {
 }
 
 function setupDashboardEventListeners() {
-    // Quick add memory
-    const quickAddBtn = document.getElementById('quickAddMemory');
-    if (quickAddBtn) {
-        quickAddBtn.addEventListener('click', () => {
-            scrollToPanel('memory-creation');
-        });
-    }
-    
-    // Voice add memory
-    const voiceAddBtn = document.getElementById('voiceAddMemory');
-    if (voiceAddBtn) {
-        voiceAddBtn.addEventListener('click', toggleVoiceRecording);
-    }
     
     // Memory form
     const memoryForm = document.getElementById('memoryForm');
@@ -3313,14 +3300,16 @@ function renderEnhancedTasks() {
 
   list.innerHTML = filtered.map(t => {
     const catColor = CAT_COLORS[t.category] || '#a0aec0';
-    const priEmoji = { high:'🔴', medium:'🟡', low:'🟢' }[t.priority] || '';
     return `
     <div class="task-item ${t.done ? 'done' : ''}" id="task-${t.id}">
       <div class="task-check ${t.done ? 'checked' : ''}" onclick="toggleEnhancedTask('${t.id}')">
         ${t.done ? '<i class="fas fa-check" style="font-size:.65rem;"></i>' : ''}
       </div>
-      <span class="task-title">${priEmoji} ${escHtml(t.title)}</span>
-      <span class="task-cat" style="background:${catColor}20;color:${catColor};border:1px solid ${catColor}40;">${t.category}</span>
+      <div class="task-content">
+        <span class="task-title">${escHtml(t.title)}</span>
+        ${t.reminder ? `<div class="task-reminder">🔔 ${escHtml(t.reminder)}</div>` : ''}
+        <span class="task-cat" style="background:${catColor}20;color:${catColor};border:1px solid ${catColor}40;">${t.category}</span>
+      </div>
       <button class="task-del" onclick="deleteEnhancedTask('${t.id}')"><i class="fas fa-trash"></i></button>
     </div>`;
   }).join('');
@@ -3330,7 +3319,7 @@ function updateEnhancedTaskStats() {
   const total = ENHANCED_STATE.tasks.length;
   const done = ENHANCED_STATE.tasks.filter(t => t.done).length;
   const pending = total - done;
-  const high = ENHANCED_STATE.tasks.filter(t => t.priority === 'high' && !t.done).length;
+  const withReminders = ENHANCED_STATE.tasks.filter(t => t.reminder && t.reminder.trim() !== '' && !t.done).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   const ids = ['ov-total','statTasksDone','ov-done'];
@@ -3339,13 +3328,12 @@ function updateEnhancedTaskStats() {
     if (el) el.textContent = [total, done, done][i];
   });
   const pendEl = document.getElementById('ov-pending'); if (pendEl) pendEl.textContent = pending;
-  const highEl = document.getElementById('ov-high'); if (highEl) highEl.textContent = high;
+  const remindersEl = document.getElementById('ov-reminders'); if (remindersEl) remindersEl.textContent = withReminders;
   const pctEl = document.getElementById('completion-pct'); if (pctEl) pctEl.textContent = pct + '%';
   const barEl = document.getElementById('completion-bar'); if (barEl) barEl.style.width = pct + '%';
   const lblEl = document.getElementById('task-count-label'); if (lblEl) lblEl.textContent = `${total} task${total !== 1 ? 's' : ''}`;
-  const sbEl = document.getElementById('sb-tasks'); if (sbEl) sbEl.textContent = pending;
-  const sidEl = document.getElementById('sidebar-task-count'); if (sidEl) sidEl.textContent = pending;
-  const sdEl = document.getElementById('statTasksDone'); if (sdEl) sdEl.textContent = done;
+  const sbEl = document.getElementById('sidebar-task-count'); if (sbEl) sbEl.textContent = pending;
+  const sidEl = document.getElementById('statTasksDone'); if (sidEl) sidEl.textContent = done;
 
   // Category breakdown
   const cats = {};
@@ -3377,14 +3365,16 @@ function addEnhancedTask() {
   const task = {
     id: uidEnhanced(), title,
     category: document.getElementById('taskCat')?.value || 'work',
-    priority: document.getElementById('taskPriority')?.value || 'medium',
+    reminder: document.getElementById('taskReminder')?.value || '',
     done: false, createdAt: new Date().toISOString(),
   };
   ENHANCED_STATE.tasks.unshift(task);
   saveEnhanced(); renderEnhancedTasks(); toast('Task added!', 'success');
   const input = document.getElementById('taskInput');
   if (input) input.value = '';
-  pushEnhancedMemory({ content: `Task added: "${title}"`, type: 'task', tags: ['task', task.category] });
+  const reminderInput = document.getElementById('taskReminder');
+  if (reminderInput) reminderInput.value = '';
+  pushEnhancedMemory({ content: `Task added: "${title}"${task.reminder ? ` (Reminder: ${task.reminder})` : ''}`, type: 'task', tags: ['task', task.category] });
 
   fetch(`${CONFIG.API_URL}/tasks/add`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(task) }).catch(()=>{});
 }
@@ -3690,13 +3680,32 @@ function renderCalendarEnhanced() {
         return memDate === dateKey;
       });
       const summary = dayMemories.length ? `${dayMemories.length} ${dayMemories.length === 1 ? 'memory' : 'memories'}` : 'No memories';
+      // Get tasks and reminders for this date
+      const dayTasks = (ENHANCED_STATE.tasks || []).filter(task => {
+        const taskDate = (task.createdAt || '').split('T')[0];
+        return taskDate === dateKey;
+      });
+      const dayReminders = dayTasks.filter(task => task.reminder && task.reminder.trim() !== '');
+      
+      // Create indicators
+      const hasMemories = dayMemories.length > 0;
+      const hasTasks = dayTasks.length > 0;
+      const hasReminders = dayReminders.length > 0;
+      
       return `
-        <div class="cal-day ${isToday ? 'today' : ''} ${outsideMonth ? 'outside-month' : ''} ${dayMemories.length ? 'has-memories' : ''}" onclick="showDayMemories(${date.getFullYear()}, ${date.getMonth()}, ${date.getDate()})">
+        <div class="cal-day ${isToday ? 'today' : ''} ${outsideMonth ? 'outside-month' : ''} ${hasMemories ? 'has-memories' : ''} ${hasTasks ? 'has-tasks' : ''} ${hasReminders ? 'has-reminders' : ''}" onclick="openCalendarPopup(${date.getFullYear()}, ${date.getMonth()}, ${date.getDate()})">
           <div class="cal-day-top">
             <span class="cal-day-number">${date.getDate()}</span>
             <span class="cal-day-month">${weekdayNames[date.getDay()]}</span>
           </div>
-          <div class="cal-day-meta">${summary}</div>
+          <div class="cal-day-meta">
+            ${summary}
+            <div class="cal-day-indicators">
+              ${hasMemories ? '<span class="cal-indicator cal-indicator-memory" title="Memories">🧠</span>' : ''}
+              ${hasTasks ? `<span class="cal-indicator cal-indicator-tasks" title="${dayTasks.length} task${dayTasks.length === 1 ? '' : 's'}">📋</span>` : ''}
+              ${hasReminders ? '<span class="cal-indicator cal-indicator-reminder" title="Reminders">🔔</span>' : ''}
+            </div>
+          </div>
         </div>
       `;
     }).join('')}
@@ -3708,25 +3717,194 @@ function renderCalendarEnhanced() {
 }
 function changeEnhancedMonth(dir) { calDateEnhanced.setMonth(calDateEnhanced.getMonth() + dir); renderCalendarEnhanced(); }
 
-function showDayMemories(year, month, day) {
+// Instagram-Style Calendar Popup Functions
+function openCalendarPopup(year, month, day) {
   const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const matches = ENHANCED_STATE.memories.filter(mem => (mem.date || mem.createdAt || '').split('T')[0] === dateKey);
-  const modalBody = document.getElementById('modalBody');
-  if (!modalBody) return;
-  modalBody.innerHTML = `
-    <h3 style="margin-bottom:.75rem;font-size:1rem;color:var(--cyan);">Memories for ${formatDate(dateKey)}</h3>
-    ${matches.length ? matches.map(m => `
-      <div class="mem-item" style="margin-bottom:.65rem;">
-        <div class="mem-icon"><i class="fas ${MEM_ICONS[m.type] || 'fa-sticky-note'}"></i></div>
-        <div class="mem-body">
-          <div class="mem-content">${escHtml(m.content)}</div>
-          <div class="mem-time">${escHtml([m.category, m.mood].filter(Boolean).join(' · ') || m.type)}</div>
+  const dateObj = new Date(year, month, day);
+  
+  // Get data for this date
+  const dayMemories = (ENHANCED_STATE.memories || []).filter(mem => {
+    const memDate = (mem.date || mem.createdAt || '').split('T')[0];
+    return memDate === dateKey;
+  });
+  
+  const dayTasks = (ENHANCED_STATE.tasks || []).filter(task => {
+    const taskDate = (task.createdAt || '').split('T')[0];
+    return taskDate === dateKey;
+  });
+  
+  const dayReminders = dayTasks.filter(task => task.reminder && task.reminder.trim() !== '');
+  
+  // Update popup header
+  const popupDate = dateObj.toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  document.getElementById('popupDateTitle').textContent = popupDate;
+  document.getElementById('popupDateSubtitle').textContent = dayMemories.length + dayTasks.length + dayReminders.length > 0 ? 'Activities' : 'No Activities';
+  
+  // Render memories section
+  renderPopupMemories(dayMemories);
+  
+  // Render tasks section
+  renderPopupTasks(dayTasks);
+  
+  // Render reminders section
+  renderPopupReminders(dayReminders);
+  
+  // Show popup with animation
+  const popup = document.getElementById('calendarPopup');
+  if (popup) {
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeCalendarPopup() {
+  const popup = document.getElementById('calendarPopup');
+  if (popup) {
+    popup.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+function renderPopupMemories(memories) {
+  const container = document.getElementById('memoriesContent');
+  const count = document.getElementById('memoriesCount');
+  
+  count.textContent = memories.length;
+  
+  if (memories.length === 0) {
+    container.innerHTML = `
+      <div class="calendar-empty-state">
+        <i class="fas fa-brain"></i>
+        <p>No memories for this day</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = memories.map(memory => `
+    <div class="calendar-memory-item" onclick="viewMemory('${memory.id}')">
+      <div class="calendar-memory-icon">
+        <i class="fas ${MEM_ICONS[memory.type] || 'fa-sticky-note'}"></i>
+      </div>
+      <div class="calendar-memory-content">
+        <div class="calendar-memory-title">${escHtml(memory.title || memory.content || 'Untitled Memory')}</div>
+        <div class="calendar-memory-meta">
+          <span class="calendar-memory-category">${memory.category || 'general'}</span>
+          ${memory.mood ? `<span class="calendar-memory-mood">${memory.mood}</span>` : ''}
         </div>
       </div>
-    `).join('') : '<div class="empty-state"><i class="fas fa-calendar-day"></i>No memories saved for this day.</div>'}
-  `;
-  document.getElementById('memoryModal')?.classList.add('open');
+    </div>
+  `).join('');
 }
+
+function renderPopupTasks(tasks) {
+  const container = document.getElementById('tasksContent');
+  const count = document.getElementById('tasksCount');
+  
+  count.textContent = tasks.length;
+  
+  if (tasks.length === 0) {
+    container.innerHTML = `
+      <div class="calendar-empty-state">
+        <i class="fas fa-tasks"></i>
+        <p>No tasks for this day</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = tasks.map(task => `
+    <div class="calendar-task-item" onclick="toggleEnhancedTask('${task.id}')">
+      <div class="calendar-task-checkbox ${task.done ? 'completed' : ''}">
+        ${task.done ? '<i class="fas fa-check" style="font-size: 0.7rem;"></i>' : ''}
+      </div>
+      <div class="calendar-task-content">
+        <div class="calendar-task-title">${escHtml(task.title)}</div>
+        ${task.reminder ? `
+          <div class="calendar-task-reminder">
+            <i class="fas fa-bell"></i>
+            ${escHtml(task.reminder)}
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPopupReminders(reminders) {
+  const container = document.getElementById('remindersContent');
+  const count = document.getElementById('remindersCount');
+  
+  count.textContent = reminders.length;
+  
+  if (reminders.length === 0) {
+    container.innerHTML = `
+      <div class="calendar-empty-state">
+        <i class="fas fa-bell"></i>
+        <p>No reminders for this day</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = reminders.map(task => `
+    <div class="calendar-reminder-item">
+      <div class="calendar-reminder-icon">
+        <i class="fas fa-bell"></i>
+      </div>
+      <div class="calendar-reminder-content">
+        <div class="calendar-reminder-text">${escHtml(task.reminder)}</div>
+        <div class="calendar-reminder-time">
+          <i class="fas fa-clock"></i>
+          Task: ${escHtml(task.title)}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Calendar Popup Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+  // Close popup on overlay click
+  const calendarPopup = document.getElementById('calendarPopup');
+  if (calendarPopup) {
+    calendarPopup.addEventListener('click', (e) => {
+      if (e.target === calendarPopup) {
+        closeCalendarPopup();
+      }
+    });
+  }
+  
+  // Close popup on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeCalendarPopup();
+    }
+  });
+  
+  // Mobile swipe gestures
+  let touchStartY = 0;
+  let touchEndY = 0;
+  
+  calendarPopup?.addEventListener('touchstart', (e) => {
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+  
+  calendarPopup?.addEventListener('touchend', (e) => {
+    touchEndY = e.changedTouches[0].screenY;
+    const swipeDistance = touchStartY - touchEndY;
+    
+    // Swipe down to close
+    if (swipeDistance > 100) {
+      closeCalendarPopup();
+    }
+  }, { passive: true });
+});
 
 // Mood chart
 let moodChartEnhanced;
@@ -3863,10 +4041,6 @@ document.getElementById('saveNoteBtn')?.addEventListener('click', () => {
   const noteTags = document.getElementById('noteTags'); if (noteTags) noteTags.value = '';
   document.getElementById('noteModal')?.classList.remove('open');
   toast('Note saved to memory!', 'success');
-});
-document.getElementById('quickAddMemory')?.addEventListener('click', () => {
-  document.getElementById('noteModal')?.classList.add('open');
-  document.getElementById('noteContent')?.focus();
 });
 
 /* ════════════════════════════════════════════════
@@ -4112,7 +4286,6 @@ document.getElementById('voiceToggle')?.addEventListener('click', () => {
   else { startListeningEnhanced(); const toggle = document.getElementById('voiceToggle'); if (toggle) toggle.innerHTML = '<i class="fas fa-stop"></i> Stop'; }
 });
 
-document.getElementById('voiceAddMemory')?.addEventListener('click', startListeningEnhanced);
 
 // Text input command
 document.getElementById('sendVoiceText')?.addEventListener('click', () => {

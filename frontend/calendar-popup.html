@@ -1,0 +1,61 @@
+<!-- Instagram-Style Calendar Popup -->
+<div id="calendarPopup" class="calendar-popup-overlay">
+    <div class="calendar-popup-container">
+        <div class="calendar-popup-header">
+            <div class="calendar-popup-date">
+                <h3 id="popupDateTitle">Loading...</h3>
+                <span id="popupDateSubtitle">Today's Activities</span>
+            </div>
+            <button class="calendar-popup-close" onclick="closeCalendarPopup()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="calendar-popup-content">
+            <!-- Memories Section -->
+            <div class="calendar-section" id="popupMemories">
+                <div class="calendar-section-header">
+                    <i class="fas fa-brain"></i>
+                    <h4>Memories</h4>
+                    <span class="calendar-section-count" id="memoriesCount">0</span>
+                </div>
+                <div class="calendar-section-content" id="memoriesContent">
+                    <div class="calendar-empty-state">
+                        <i class="fas fa-brain"></i>
+                        <p>No memories for this day</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tasks Section -->
+            <div class="calendar-section" id="popupTasks">
+                <div class="calendar-section-header">
+                    <i class="fas fa-tasks"></i>
+                    <h4>Tasks</h4>
+                    <span class="calendar-section-count" id="tasksCount">0</span>
+                </div>
+                <div class="calendar-section-content" id="tasksContent">
+                    <div class="calendar-empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <p>No tasks for this day</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reminders Section -->
+            <div class="calendar-section" id="popupReminders">
+                <div class="calendar-section-header">
+                    <i class="fas fa-bell"></i>
+                    <h4>Reminders</h4>
+                    <span class="calendar-section-count" id="remindersCount">0</span>
+                </div>
+                <div class="calendar-section-content" id="remindersContent">
+                    <div class="calendar-empty-state">
+                        <i class="fas fa-bell"></i>
+                        <p>No reminders for this day</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -53,7 +53,7 @@ def start_backend():
     # Change to backend directory
     os.chdir(backend_dir)
     
-    # Start backend server
+    # Start backend server with better error handling
     backend_process = subprocess.Popen([
         str(venv_python),
         "server.py"
@@ -66,6 +66,10 @@ def start_backend():
         return backend_process
     else:
         print("❌ Backend server failed to start")
+        # Print error output for debugging
+        stdout, stderr = backend_process.communicate()
+        if stderr:
+            print(f"Error: {stderr}")
         return None
 
 def start_frontend():
@@ -77,7 +81,7 @@ def start_frontend():
     # Change to frontend directory
     os.chdir(frontend_dir)
     
-    # Start frontend server
+    # Start frontend server with better error handling
     frontend_process = subprocess.Popen([
         sys.executable,
         "-m", "http.server", "3000"
@@ -90,6 +94,10 @@ def start_frontend():
         return frontend_process
     else:
         print("❌ Frontend server failed to start")
+        # Print error output for debugging
+        stdout, stderr = frontend_process.communicate()
+        if stderr:
+            print(f"Error: {stderr}")
         return None
 
 def open_browser():
@@ -127,6 +135,10 @@ def main():
     browser_thread.daemon = True
     browser_thread.start()
     
+    # Give servers more time to stabilize
+    print("⏳ Waiting for servers to stabilize...")
+    time.sleep(3)
+    
     print("\n" + "=" * 60)
     print("🎉 Application is running!")
     print("📍 Backend: http://localhost:5000")
@@ -138,24 +150,30 @@ def main():
     print("=" * 60)
     
     try:
-        # Keep the script running
+        # Keep the script running with better monitoring
+        print("🔄 Monitoring servers... (Press Ctrl+C to stop)")
         while True:
             time.sleep(1)
             # Check if servers are still running
             if backend_process.poll() is not None:
-                print("❌ Backend server stopped")
+                print("❌ Backend server stopped unexpectedly")
+                print("🛑 Stopping application...")
                 break
             if frontend_process.poll() is not None:
-                print("❌ Frontend server stopped")
+                print("❌ Frontend server stopped unexpectedly")
+                print("🛑 Stopping application...")
                 break
     except KeyboardInterrupt:
         print("\n🛑 Stopping servers...")
     finally:
         # Clean up
+        print("🧹 Cleaning up processes...")
         if backend_process:
             backend_process.terminate()
+            backend_process.wait(timeout=5)
         if frontend_process:
             frontend_process.terminate()
+            frontend_process.wait(timeout=5)
         print("✅ Application stopped")
 
 if __name__ == "__main__":
