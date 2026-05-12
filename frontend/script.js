@@ -3301,16 +3301,31 @@ function renderEnhancedTasks() {
   list.innerHTML = filtered.map(t => {
     const catColor = CAT_COLORS[t.category] || '#a0aec0';
     return `
-    <div class="task-item ${t.done ? 'done' : ''}" id="task-${t.id}">
-      <div class="task-check ${t.done ? 'checked' : ''}" onclick="toggleEnhancedTask('${t.id}')">
-        ${t.done ? '<i class="fas fa-check" style="font-size:.65rem;"></i>' : ''}
+    <div class="memory-card task-card ${t.done ? 'completed' : 'pending'}" id="task-${t.id}">
+      <div class="memory-card-header">
+        <div class="memory-card-icon task-icon ${t.done ? 'completed' : 'pending'}" style="background: ${t.done ? 'linear-gradient(135deg, var(--green), #10b981)' : 'linear-gradient(135deg, var(--primary), var(--secondary-color))'};">
+          <i class="fas ${t.done ? 'fa-check' : 'fa-clock'}"></i>
+        </div>
+        <div class="memory-card-meta">
+          <span class="memory-card-type task-type" style="background: ${catColor};">${t.category}</span>
+          <span class="memory-card-time task-status ${t.done ? 'completed' : 'pending'}">${t.done ? 'Completed' : 'Pending'}</span>
+        </div>
       </div>
-      <div class="task-content">
-        <span class="task-title">${escHtml(t.title)}</span>
-        ${t.reminder ? `<div class="task-reminder">🔔 ${escHtml(t.reminder)}</div>` : ''}
-        <span class="task-cat" style="background:${catColor}20;color:${catColor};border:1px solid ${catColor}40;">${t.category}</span>
+      <div class="memory-card-content task-content">
+        <h4 class="${t.done ? 'completed-title' : ''}">${escHtml(t.title)}</h4>
+        <div class="task-details">
+          ${t.reminder ? `<div class="task-reminder"><i class="fas fa-bell"></i> ${escHtml(t.reminder)}</div>` : ''}
+          <div class="task-priority">
+            <span class="priority-badge ${t.priority || 'medium'}">${t.priority || 'medium'}</span>
+          </div>
+        </div>
       </div>
-      <button class="task-del" onclick="deleteEnhancedTask('${t.id}')"><i class="fas fa-trash"></i></button>
+      <button class="task-complete-btn" onclick="toggleEnhancedTask('${t.id}')" title="${t.done ? 'Mark as pending' : 'Mark as complete'}">
+        <i class="fas ${t.done ? 'fa-undo' : 'fa-check'}"></i>
+      </button>
+      <button class="task-delete-btn" onclick="deleteEnhancedTask('${t.id}')" title="Delete task">
+        <i class="fas fa-trash"></i>
+      </button>
     </div>`;
   }).join('');
 }
@@ -3344,13 +3359,28 @@ function updateEnhancedTaskStats() {
       const c = CAT_COLORS[cat] || '#a0aec0';
       const pctCat = total > 0 ? (cnt / total * 100).toFixed(0) : 0;
       return `
-      <div class="spend-row">
-        <div class="spend-label">
-          <span style="color:${c};text-transform:capitalize;">${cat}</span>
-          <span style="color:var(--text-muted);">${cnt} tasks · ${pctCat}%</span>
+      <div class="memory-card task-overview-card">
+        <div class="memory-card-header">
+          <div class="memory-card-icon task-category-icon" style="background: linear-gradient(135deg, ${c}aa, ${c});">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <div class="memory-card-meta">
+            <span class="memory-card-type task-category-type" style="background: ${c};">${cat}</span>
+            <span class="memory-card-time task-count">${cnt} tasks</span>
+          </div>
         </div>
-        <div class="spend-bar">
-          <div class="spend-fill" style="width:${pctCat}%;background:linear-gradient(90deg,${c}aa,${c});box-shadow:0 0 6px ${c}60;"></div>
+        <div class="memory-card-content task-overview-content">
+          <h4>Task Distribution</h4>
+          <div class="task-overview-details">
+            <div class="task-percentage" style="color: ${c}; border-color: ${c}; background: ${c}15;">
+              ${pctCat}%
+            </div>
+            <div class="task-progress">
+              <div class="task-progress-bar">
+                <div class="task-progress-fill" style="width: ${pctCat}%; background: linear-gradient(90deg, ${c}aa, ${c}); box-shadow: 0 0 6px ${c}60;"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -3363,20 +3393,22 @@ function addEnhancedTask() {
   const title = document.getElementById('taskInput')?.value.trim();
   if (!title) return toast('Please enter a task title.', 'error');
   const task = {
-    id: uidEnhanced(), title,
-    category: document.getElementById('taskCat')?.value || 'work',
-    reminder: document.getElementById('taskReminder')?.value || '',
-    done: false, createdAt: new Date().toISOString(),
+    id: uidEnhanced(),
+    title,
+    category: document.getElementById('taskCategory')?.value || 'general',
+    reminder: document.getElementById('taskReminder')?.value.trim() || '',
+    done: false,
+    createdAt: new Date().toISOString()
   };
   ENHANCED_STATE.tasks.unshift(task);
-  saveEnhanced(); renderEnhancedTasks(); toast('Task added!', 'success');
-  const input = document.getElementById('taskInput');
-  if (input) input.value = '';
-  const reminderInput = document.getElementById('taskReminder');
-  if (reminderInput) reminderInput.value = '';
-  pushEnhancedMemory({ content: `Task added: "${title}"${task.reminder ? ` (Reminder: ${task.reminder})` : ''}`, type: 'task', tags: ['task', task.category] });
-
-  fetch(`${CONFIG.API_URL}/tasks/add`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(task) }).catch(()=>{});
+  saveEnhanced(); renderEnhancedTasks(); updateEnhancedTaskStats(); updateEnhancedCharts();
+  
+  // Clear input fields after adding
+  document.getElementById('taskInput').value = '';
+  document.getElementById('taskCategory').value = 'general';
+  document.getElementById('taskReminder').value = '';
+  
+  toast('Task added successfully!', 'success');
 }
 
 function toggleEnhancedTask(id) {
@@ -3435,42 +3467,78 @@ function renderEnhancedExpenses() {
     list.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i>No transactions yet.</div>';
   } else {
     list.innerHTML = last5.map(e => `
-    <div class="tx-item tx-${e.type}" id="exp-${e.id}">
-      <div class="tx-icon"><i class="fas ${e.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'}"></i></div>
-      <div class="tx-body">
-        <div class="tx-title">${escHtml(e.title)}</div>
-        <div class="tx-meta">${e.category} · ${timeAgoEnhanced(e.date)}</div>
+    <div class="memory-card transaction-card tx-${e.type}" id="exp-${e.id}">
+      <div class="memory-card-header">
+        <div class="memory-card-icon transaction-icon ${e.type}">
+          <i class="fas ${e.type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+        </div>
+        <div class="memory-card-meta">
+          <span class="memory-card-type transaction-type ${e.type}">${e.type}</span>
+          <span class="memory-card-time">${timeAgoEnhanced(e.date)}</span>
+        </div>
       </div>
-      <span class="tx-amount">${e.type === 'income' ? '+' : '-'}${fmtMoney(e.amount)}</span>
-      <button class="tx-del" onclick="deleteEnhancedExpense('${e.id}')"><i class="fas fa-trash"></i></button>
+      <div class="memory-card-content transaction-content">
+        <h4>${escHtml(e.title)}</h4>
+        <div class="transaction-details">
+          <span class="transaction-category">${e.category}</span>
+          <span class="transaction-amount ${e.type}">${e.type === 'income' ? '+' : '-'}${fmtMoney(e.amount)}</span>
+        </div>
+      </div>
+      <button class="transaction-delete" onclick="deleteEnhancedExpense('${e.id}')" title="Delete transaction">
+        <i class="fas fa-trash"></i>
+      </button>
     </div>`).join('');
   }
 
   // Spending breakdown by category
-  const byCat = {};
-  ENHANCED_STATE.expenses.filter(e => e.type === 'expense').forEach(e => {
-    byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-  });
-  const total = Object.values(byCat).reduce((s, v) => s + v, 0);
-  const bd = document.getElementById('spendBreakdown');
-  if (bd) {
-    bd.innerHTML = Object.entries(byCat).sort(([,a],[,b]) => b - a).map(([cat, amt]) => {
-      const pct = total > 0 ? (amt / total * 100).toFixed(1) : 0;
-      const c = CAT_COLORS[cat] || '#a0aec0';
-      return `
-      <div class="spend-row">
-        <div class="spend-label">
-          <span style="text-transform:capitalize;color:var(--text-primary);">${cat}</span>
-          <div style="display:flex;gap:.6rem;align-items:center;">
-            <span style="color:${c};font-size:.72rem;">${pct}%</span>
-            <span style="font-weight:700;">${fmtMoney(amt)}</span>
-          </div>
-        </div>
-        <div class="spend-bar">
-          <div class="spend-fill" style="width:${pct}%;background:linear-gradient(90deg,${c}aa,${c});box-shadow:0 0 8px ${c}60;"></div>
-        </div>
-      </div>`;
-    }).join('') || '<div class="empty-state"><i class="fas fa-chart-pie"></i>No expense data.</div>';
+  try {
+    const byCat = {};
+    ENHANCED_STATE.expenses.filter(e => e.type === 'expense').forEach(e => {
+      byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+    });
+    const total = Object.values(byCat).reduce((s, v) => s + v, 0);
+    const bd = document.getElementById('spendBreakdown');
+    if (bd) {
+      if (Object.keys(byCat).length === 0) {
+        bd.innerHTML = '<div class="empty-state"><i class="fas fa-chart-pie"></i>No expense data.</div>';
+      } else {
+        bd.innerHTML = Object.entries(byCat).sort(([,a],[,b]) => b - a).map(([cat, amt]) => {
+          const pct = total > 0 ? (amt / total * 100).toFixed(1) : 0;
+          const c = CAT_COLORS[cat] || '#a0aec0';
+          return `
+          <div class="memory-card spending-breakdown-card">
+            <div class="memory-card-header">
+              <div class="memory-card-icon spending-category-icon" style="background: linear-gradient(135deg, ${c}aa, ${c});">
+                <i class="fas fa-chart-pie"></i>
+              </div>
+              <div class="memory-card-meta">
+                <span class="memory-card-type spending-category-type" style="background: ${c};">${cat}</span>
+                <span class="memory-card-time spending-percentage">${pct}%</span>
+              </div>
+            </div>
+            <div class="memory-card-content spending-content">
+              <h4>Spending Analysis</h4>
+              <div class="spending-details">
+                <div class="spending-amount" style="color: ${c}; border-color: ${c}; background: ${c}15;">
+                  ${fmtMoney(amt)}
+                </div>
+                <div class="spending-progress">
+                  <div class="spending-progress-bar">
+                    <div class="spending-progress-fill" style="width: ${pct}%; background: linear-gradient(90deg, ${c}aa, ${c}); box-shadow: 0 0 8px ${c}60;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+  } catch (error) {
+    console.error('Error rendering spending breakdown:', error);
+    const bd = document.getElementById('spendBreakdown');
+    if (bd) {
+      bd.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i>Error loading breakdown.</div>';
+    }
   }
 
   updateEnhancedCharts();
@@ -3479,27 +3547,63 @@ function renderEnhancedExpenses() {
 function addEnhancedExpense() {
   const title = document.getElementById('expTitle')?.value.trim();
   const amount = parseFloat(document.getElementById('expAmount')?.value);
+  const type = document.getElementById('expType')?.value || 'expense';
   if (!title || isNaN(amount) || amount <= 0) return toast('Please enter valid expense details.', 'error');
-
-  const exp = {
-    id: uidEnhanced(), title, amount,
-    type: document.getElementById('expType')?.value || 'expense',
-    category: document.getElementById('expCat')?.value || 'other',
-    date: new Date().toISOString(),
+  const expense = {
+    id: uidEnhanced(),
+    title,
+    amount,
+    type: type,
+    category: document.getElementById('expCat')?.value || 'general',
+    date: document.getElementById('expDate')?.value || new Date().toISOString().split('T')[0],
+    createdAt: new Date().toISOString()
   };
-  ENHANCED_STATE.expenses.unshift(exp);
-  saveEnhanced(); renderEnhancedExpenses();
-  toast(`${exp.type === 'income' ? 'Income' : 'Expense'} of ${fmtMoney(amount)} added!`, 'success');
-  const titleInput = document.getElementById('expTitle'); if (titleInput) titleInput.value = '';
-  const amountInput = document.getElementById('expAmount'); if (amountInput) amountInput.value = '';
-  const form = document.getElementById('expenseForm'); if (form) form.style.display = 'none';
-
-  fetch(`${CONFIG.API_URL}/expenses/add`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(exp) }).catch(()=>{});
+  
+  // Add to enhanced state
+  ENHANCED_STATE.expenses.unshift(expense);
+  saveEnhanced();
+  
+  // Update UI immediately
+  renderEnhancedExpenses();
+  updateEnhancedCharts();
+  
+  // Also save to MongoDB if authenticated
+  if (authToken && !authToken.startsWith('demo_token_')) {
+    apiJson('/expenses', {
+      method: 'POST',
+      body: JSON.stringify(expense)
+    }).catch(error => {
+      console.error('Failed to save expense to backend:', error);
+      toast('Expense saved locally, but failed to sync to cloud', 'warning');
+    });
+  }
+  
+  // Clear input fields after adding
+  document.getElementById('expTitle').value = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expCategory').value = 'general';
+  document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+  
+  toast('Expense added successfully!', 'success');
 }
 
 function deleteEnhancedExpense(id) {
+  // Remove from enhanced state
   ENHANCED_STATE.expenses = ENHANCED_STATE.expenses.filter(e => e.id !== id);
-  saveEnhanced(); renderEnhancedExpenses(); toast('Transaction removed.', 'info');
+  saveEnhanced();
+  renderEnhancedExpenses();
+  
+  // Also delete from MongoDB if authenticated
+  if (authToken && !authToken.startsWith('demo_token_')) {
+    apiJson(`/expenses/${id}`, {
+      method: 'DELETE'
+    }).catch(error => {
+      console.error('Failed to delete expense from backend:', error);
+      toast('Expense deleted locally, but failed to sync to cloud', 'warning');
+    });
+  }
+  
+  toast('Transaction removed.', 'info');
 }
 
 document.getElementById('addExpenseToggle')?.addEventListener('click', () => {
@@ -3531,12 +3635,15 @@ function pushEnhancedMemory(mem) {
 
   const sbEl = document.getElementById('sb-memories'); if (sbEl) sbEl.textContent = ENHANCED_STATE.memories.length;
   const tmEl = document.getElementById('totalMemories'); if (tmEl) tmEl.textContent = ENHANCED_STATE.memories.length;
-  const rmEl = document.getElementById('recentMemories');
-  if (rmEl) {
-    const weekAgo = Date.now() - 7 * 86400000;
-    rmEl.textContent = ENHANCED_STATE.memories.filter(m => new Date(m.createdAt).getTime() > weekAgo).length;
-  }
-
+  
+  // Clear input fields after adding
+  document.getElementById('memoryTitle').value = '';
+  document.getElementById('memoryDescription').value = '';
+  document.getElementById('memoryCategory').value = 'general';
+  document.getElementById('memoryMood').value = 'neutral';
+  document.getElementById('memoryDate').value = new Date().toISOString().split('T')[0];
+  
+  toast('Memory saved successfully!', 'success');
   fetch(`${CONFIG.API_URL}/memories`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(entry) }).catch(()=>{});
 }
 
@@ -3551,12 +3658,19 @@ function renderEnhancedMemory() {
     return;
   }
   list.innerHTML = last5.map(m => `
-  <div class="mem-item mem-${m.type}">
-    <div class="mem-icon"><i class="fas ${MEM_ICONS[m.type] || 'fa-sticky-note'}"></i></div>
-    <div class="mem-body">
-      <div class="mem-content">${escHtml(m.content)}</div>
-      <div class="mem-time">${timeAgoEnhanced(m.createdAt)}</div>
-      ${m.tags?.length ? `<div class="mem-tags">${m.tags.map(t => `<span class="mem-tag">${t}</span>`).join('')}</div>` : ''}
+  <div class="memory-card" onclick="showMemoryModalEnhanced('${m.id}')">
+    <div class="memory-card-header">
+      <div class="memory-card-icon">
+        <i class="fas ${MEM_ICONS[m.type] || 'fa-sticky-note'}"></i>
+      </div>
+      <div class="memory-card-meta">
+        <span class="memory-card-type">${m.type || 'note'}</span>
+        <span class="memory-card-time">${timeAgoEnhanced(m.createdAt)}</span>
+      </div>
+    </div>
+    <div class="memory-card-content">
+      <h4>${escHtml(m.content.substring(0, 80))}${m.content.length > 80 ? '…' : ''}</h4>
+      ${m.tags?.length ? `<div class="memory-card-tags">${m.tags.map(t => `<span class="memory-card-tag">${t}</span>`).join('')}</div>` : ''}
     </div>
   </div>`).join('');
 }
@@ -3944,65 +4058,92 @@ function renderMoodChartEnhanced() {
 ════════════════════════════════════════════════ */
 let expChartEnhanced, taskChartEnhanced;
 function buildEnhancedCharts() {
-  const expCtx = document.getElementById('expenseChart')?.getContext('2d');
-  const taskCtx = document.getElementById('taskChart')?.getContext('2d');
+  try {
+    const expCtx = document.getElementById('expenseChart')?.getContext('2d');
+    const taskCtx = document.getElementById('taskChart')?.getContext('2d');
 
-  if (expCtx) {
-    if (expChartEnhanced) expChartEnhanced.destroy();
-    const byCat = {};
-    ENHANCED_STATE.expenses.filter(e => e.type === 'expense').forEach(e => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; });
-    const labels = Object.keys(byCat);
-    const data = Object.values(byCat);
-    const colors = labels.map(l => CAT_COLORS[l] || '#a0aec0');
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js is not loaded');
+      return;
+    }
 
-    expChartEnhanced = new Chart(expCtx, {
-      type: 'bar',
-      data: {
-        labels: labels.length ? labels : ['No data'],
-        datasets: [{
-label: 'Expenses (₹)',
-          data: data.length ? data : [0],
-          backgroundColor: colors.map(c => c + '55'),
-          borderColor: colors,
-          borderWidth: 2,
-          borderRadius: 8,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend:{ display:false } },
-        scales: {
-          x: { grid:{ color:'rgba(255,255,255,.04)' }, ticks:{ color:'#64748b', font:{size:10} } },
-y: { grid:{ color:'rgba(255,255,255,.06)' }, ticks:{ color:'#64748b', font:{size:10}, callback: v => '₹'+v } }
-        }
-      }
-    });
-  }
+    // Expense Chart
+    if (expCtx) {
+      if (expChartEnhanced) expChartEnhanced.destroy();
+      const byCat = {};
+      ENHANCED_STATE.expenses.filter(e => e.type === 'expense').forEach(e => { 
+        byCat[e.category] = (byCat[e.category] || 0) + e.amount; 
+      });
+      const labels = Object.keys(byCat);
+      const data = Object.values(byCat);
+      const colors = labels.map(l => CAT_COLORS[l] || '#a0aec0');
 
-  if (taskCtx) {
-    if (taskChartEnhanced) taskChartEnhanced.destroy();
-    const done = ENHANCED_STATE.tasks.filter(t => t.done).length;
-    const pending = ENHANCED_STATE.tasks.filter(t => !t.done).length;
-    taskChartEnhanced = new Chart(taskCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Completed', 'Pending'],
-        datasets: [{
-          data: [done || 0, pending || 1],
-          backgroundColor: ['rgba(0,255,136,.7)', 'rgba(255,45,155,.5)'],
-          borderColor: ['#00ff88', '#ff2d9b'],
-          borderWidth: 2,
-          hoverOffset: 8,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position:'bottom', labels:{ color:'#94a3b8', font:{size:11}, padding:16 } }
+      expChartEnhanced = new Chart(expCtx, {
+        type: 'bar',
+        data: {
+          labels: labels.length ? labels : ['No data'],
+          datasets: [{
+            label: 'Expenses (₹)',
+            data: data.length ? data : [0],
+            backgroundColor: colors.map(c => c + '55'),
+            borderColor: colors,
+            borderWidth: 2,
+            borderRadius: 8,
+          }]
         },
-        cutout: '68%',
-      }
-    });
+        options: {
+          responsive: true, 
+          maintainAspectRatio: false,
+          plugins: { 
+            legend:{ display:false } 
+          },
+          scales: {
+            x: { 
+              grid:{ color:'rgba(255,255,255,.04)' }, 
+              ticks:{ color:'#64748b', font:{size:10} } 
+            },
+            y: { 
+              grid:{ color:'rgba(255,255,255,.06)' }, 
+              ticks:{ color:'#64748b', font:{size:10}, callback: v => '₹'+v } 
+            }
+          }
+        }
+      });
+    } else {
+      console.warn('Expense chart canvas not found');
+    }
+
+    // Task Chart
+    if (taskCtx) {
+      if (taskChartEnhanced) taskChartEnhanced.destroy();
+      const done = ENHANCED_STATE.tasks.filter(t => t.done).length;
+      const pending = ENHANCED_STATE.tasks.filter(t => !t.done).length;
+      taskChartEnhanced = new Chart(taskCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Completed', 'Pending'],
+          datasets: [{
+            data: [done || 0, pending || 1],
+            backgroundColor: ['rgba(0,255,136,.7)', 'rgba(255,45,155,.5)'],
+            borderColor: ['#00ff88', '#ff2d9b'],
+            borderWidth: 2,
+            hoverOffset: 8,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position:'bottom', labels:{ color:'#94a3b8', font:{size:11}, padding:16 } }
+          },
+          cutout: '68%',
+        }
+      });
+    } else {
+      console.warn('Task chart canvas not found');
+    }
+  } catch (error) {
+    console.error('Error building charts:', error);
   }
 }
 
@@ -4488,8 +4629,12 @@ function enhancedInit() {
   renderEnhancedMemory();
   renderRecentMemoriesEnhanced();
   renderCalendarEnhanced();
-  buildEnhancedCharts();
-  renderMoodChartEnhanced();
+  
+  // Delay chart building to ensure DOM is ready
+  setTimeout(() => {
+    buildEnhancedCharts();
+    renderMoodChartEnhanced();
+  }, 100);
 
   // Init stats
   const total = ENHANCED_STATE.memories.length;
@@ -4565,8 +4710,14 @@ window.addEventListener('resize', updateSidebarToggleIcon);
     try {
       console.log(`API Request: ${options.method || 'GET'} ${url}`);
       
+      // Add authentication headers if token exists
+      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
       const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        headers,
         ...options,
       });
       
