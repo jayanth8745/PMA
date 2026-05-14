@@ -49,15 +49,9 @@
 
   <div class="sidebar-section">
     <div class="sidebar-label">Main Features</div>
-    <a class="sidebar-link" href="#section-recent-memories" onclick="smoothTo('section-recent-memories')">
-      <i class="fas fa-clock"></i> Recent Memories
-    </a>
     <a class="sidebar-link" href="#section-tasks" onclick="smoothTo('section-tasks')">
       <i class="fas fa-check-square"></i> Task Management
       <span class="badge" id="sidebar-task-count">0</span>
-    </a>
-    <a class="sidebar-link" href="#section-last-memories" onclick="smoothTo('section-last-memories')">
-      <i class="fas fa-list"></i> Last 5 Memories
     </a>
     <a class="sidebar-link" href="#section-voice" onclick="smoothTo('section-voice')">
       <i class="fas fa-comments"></i> Chat Assistant
@@ -221,28 +215,6 @@
         </div>
       </section>
 
-      <!-- Recent Memories Panel -->
-      <section class="dashboard-panel" id="section-recent-memories">
-        <div class="panel-header">
-          <h2><i class="fas fa-clock"></i> Recent Memories</h2>
-        </div>
-        <div class="panel-content">
-          <div id="recentMemoriesList" class="memories-list">
-            <div class="empty-state"><i class="fas fa-clock"></i>No memories yet.</div>
-          </div>
-        </div>
-      </section>
-
-          <!-- Last 5 Memories -->
-    <div class="panel glass" id="section-last-memories">
-      <div class="panel-header">
-        <span class="panel-title"><i class="fas fa-brain"></i> Last 5 Memories</span>
-        <button class="panel-action violet" id="addQuickNote"><i class="fas fa-sticky-note"></i> Note</button>
-      </div>
-      <div class="mem-list" id="memList">
-        <div class="empty-state"><i class="fas fa-brain"></i>No memories yet.</div>
-      </div>
-    </div>
   </div>
     
   <!-- ── TASKS ── -->
@@ -592,6 +564,9 @@ VOICE ASSISTANT
 <!-- ═══════════════════════════════════════════════
      SCRIPTS
 ═══════════════════════════════════════════════ -->
+<!-- Toast Container -->
+<div id="toast-wrap" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
+
 <script src="config.js" onerror="void 0"></script>
 <script src="script.js" onerror="void 0"></script>
 </body>

@@ -236,7 +236,6 @@ async function loadMemories(page = 1, search = '') {
             currentPage = data.pagination.page;
             totalPages = data.pagination.pages;
             
-            renderMemories();
             renderPagination();
         } else {
             showError(data.error || 'Failed to load memories');
@@ -247,30 +246,6 @@ async function loadMemories(page = 1, search = '') {
     } finally {
         hideLoading();
     }
-}
-
-function renderMemories() {
-    const memoriesList = document.getElementById('recentMemoriesList');
-    if (!memoriesList) return;
-    
-    if (memories.length === 0) {
-        memoriesList.innerHTML = '<p class="no-memories">No memories found. Create your first memory!</p>';
-        return;
-    }
-    
-    memoriesList.innerHTML = memories.map(memory => `
-        <div class="memory-card mood-${memory.mood}" onclick="viewMemory('${memory.id}')">
-            <div class="memory-header">
-                <h3>${memory.title}</h3>
-                <span class="memory-date">${formatDate(memory.date)}</span>
-            </div>
-            <p class="memory-description">${memory.description.substring(0, 150)}${memory.description.length > 150 ? '...' : ''}</p>
-            <div class="memory-footer">
-                <span class="memory-category">${memory.category}</span>
-                <span class="memory-mood">${memory.mood}</span>
-            </div>
-        </div>
-    `).join('');
 }
 
 function renderPagination() {
@@ -423,8 +398,13 @@ async function editMemory(memoryId) {
 
 // Theme Management
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || localStorage.getItem('darkMode') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    localStorage.setItem('theme', savedTheme);
+    localStorage.setItem('darkMode', savedTheme);
+    if (typeof ENHANCED_STATE !== 'undefined') {
+        ENHANCED_STATE.darkMode = savedTheme === 'dark';
+    }
 }
 
 function toggleTheme() {
@@ -432,6 +412,10 @@ function toggleTheme() {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+    localStorage.setItem('darkMode', newTheme);
+    if (typeof ENHANCED_STATE !== 'undefined') {
+        ENHANCED_STATE.darkMode = newTheme === 'dark';
+    }
 }
 
 // Event Listeners
@@ -452,14 +436,20 @@ function setupEventListeners() {
     
     if (loginForm) {
         console.log('Login form found, adding event listener');
-        loginForm.addEventListener('submit', handleLogin);
+        if (!loginForm.dataset.submitBound) {
+            loginForm.addEventListener('submit', handleLogin);
+            loginForm.dataset.submitBound = 'true';
+        }
     } else {
         console.error('Login form not found');
     }
     
     if (registerForm) {
         console.log('Register form found, adding event listener');
-        registerForm.addEventListener('submit', handleRegister);
+        if (!registerForm.dataset.submitBound) {
+            registerForm.addEventListener('submit', handleRegister);
+            registerForm.dataset.submitBound = 'true';
+        }
     } else {
         console.error('Register form not found');
     }
@@ -1538,21 +1528,27 @@ async function sendToAI(message){
         );
 
         const response =
-            await fetch("/chat", {
+    await fetch("http://localhost:5000/api/chat", {
 
-                method: "POST",
+        method: "POST",
 
-                headers: {
-                    "Content-Type":
-                    "application/json"
-                },
+        headers: {
 
-                body: JSON.stringify({
+            "Content-Type":
+            "application/json",
 
-                    message: message
-                })
-            });
+            // =====================================
+            // USER AUTH
+            // =====================================
+            "Authorization":
+            authToken
+        },
 
+        body: JSON.stringify({
+
+            text: message
+        })
+    });
         const data =
             await response.json();
 
@@ -1570,7 +1566,7 @@ async function sendToAI(message){
         console.error(error);
 
         speakText(
-            "Connection error"
+            "I'm having trouble connecting to the server. Please check your internet connection and try again."
         );
     }
 }
@@ -2009,8 +2005,13 @@ function initializeApp() {
 
 // Theme Management
 function loadTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem('theme') || localStorage.getItem('darkMode') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    localStorage.setItem('theme', savedTheme);
+    localStorage.setItem('darkMode', savedTheme);
+    if (typeof ENHANCED_STATE !== 'undefined') {
+        ENHANCED_STATE.darkMode = savedTheme === 'dark';
+    }
     updateDarkModeIcon();
 }
 
@@ -2019,6 +2020,10 @@ function toggleTheme() {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+    localStorage.setItem('darkMode', newTheme);
+    if (typeof ENHANCED_STATE !== 'undefined') {
+        ENHANCED_STATE.darkMode = newTheme === 'dark';
+    }
     updateDarkModeIcon();
     
     // Add transition effect
@@ -2303,11 +2308,14 @@ function initializeHomePage() {
 function initializeLoginPage() {
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
+        if (!loginForm.dataset.submitBound) {
+            loginForm.addEventListener('submit', handleLogin);
+            loginForm.dataset.submitBound = 'true';
+        }
     }
     
     // Google OAuth configuration
-    const GOOGLE_CLIENT_ID = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com'; // REPLACE with your actual Google Client ID
+    const GOOGLE_CLIENT_ID = '127133815034-bljv5l22k71v2s4o7q7kjkmrmnitveq5.apps.googleusercontent.com'; // REPLACE with your actual Google Client ID
     
     // Initialize Google Sign-In
     if (typeof google !== 'undefined') {
@@ -2341,7 +2349,10 @@ function initializeLoginPage() {
 function initializeRegisterPage() {
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
-        registerForm.addEventListener('submit', handleRegister);
+        if (!registerForm.dataset.submitBound) {
+            registerForm.addEventListener('submit', handleRegister);
+            registerForm.dataset.submitBound = 'true';
+        }
     }
     
     // Password strength indicator
@@ -2361,7 +2372,7 @@ function initializeRegisterPage() {
     }
     
     // Google OAuth configuration for registration
-    const GOOGLE_CLIENT_ID = '123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com'; // REPLACE with your actual Google Client ID
+    const GOOGLE_CLIENT_ID = '127133815034-bljv5l22k71v2s4o7q7kjkmrmnitveq5.apps.googleusercontent.com'; // REPLACE with your actual Google Client ID
     
     // Initialize Google Sign-In for registration
     if (typeof google !== 'undefined') {
@@ -2476,7 +2487,6 @@ function initializeDashboard() {
 async function loadDashboardData() {
     await Promise.all([
         loadStats(),
-        loadRecentMemories(),
         renderMiniCalendar()
     ]);
 }
@@ -2556,81 +2566,6 @@ async function loadStats() {
             document.getElementById('totalCategories').textContent = '6';
             document.getElementById('favoriteMood').textContent = 'Happy';
             document.getElementById('recentMemories').textContent = '3';
-        }
-    }
-}
-
-async function loadRecentMemories() {
-    try {
-        // Check if we're in demo mode
-        if (authToken && authToken.startsWith('demo_token_')) {
-            // Load demo memories
-            const demoMemories = [
-                {
-                    title: 'Welcome to Memory Assistant',
-                    description: 'This is your first demo memory. Start adding your own memories to see them here!',
-                    date: new Date().toISOString(),
-                    mood: 'happy',
-                    category: 'general'
-                },
-                {
-                    title: 'Project Meeting',
-                    description: 'Had a productive meeting with the team about the new project timeline.',
-                    date: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-                    mood: 'excited',
-                    category: 'work'
-                },
-                {
-                    title: 'Weekend Adventure',
-                    description: 'Went hiking with friends and discovered a beautiful trail.',
-                    date: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-                    mood: 'peaceful',
-                    category: 'travel'
-                }
-            ];
-            
-            const memoriesList = document.getElementById('recentMemoriesList');
-            if (memoriesList) {
-                memoriesList.innerHTML = demoMemories.map(memory => `
-                    <div class="memory-item">
-                        <h4>${memory.title}</h4>
-                        <p>${memory.description.substring(0, 100)}${memory.description.length > 100 ? '...' : ''}</p>
-                        <small>${formatDate(memory.date)}</small>
-                    </div>
-                `).join('');
-            }
-            return;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/memories?limit=5`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            const memoriesList = document.getElementById('recentMemoriesList');
-            if (memoriesList) {
-                memoriesList.innerHTML = data.memories.map(memory => `
-                    <div class="memory-item">
-                        <h4>${memory.title}</h4>
-                        <p>${memory.description.substring(0, 100)}${memory.description.length > 100 ? '...' : ''}</p>
-                        <small>${formatDate(memory.date)}</small>
-                    </div>
-                `).join('') || '<p>No memories yet. Create your first memory!</p>';
-            }
-        }
-    } catch (error) {
-        console.error('Failed to load recent memories:', error);
-        
-        // Load demo memories if backend is not available
-        if (authToken && authToken.startsWith('demo_token_')) {
-            const memoriesList = document.getElementById('recentMemoriesList');
-            if (memoriesList) {
-                memoriesList.innerHTML = '<p>Demo memories loaded. Start the backend to see real data.</p>';
-            }
         }
     }
 }
@@ -2874,7 +2809,7 @@ const ENHANCED_STATE = {
   memories: JSON.parse(localStorage.getItem('pma_memories') || '[]'),
   voiceLogs: JSON.parse(localStorage.getItem('pma_voice_logs') || '[]'),
   taskFilter: 'all',
-  darkMode: localStorage.getItem('darkMode') !== 'light',
+  darkMode: (localStorage.getItem('theme') || localStorage.getItem('darkMode') || 'light') === 'dark',
 };
 
 const saveEnhanced = () => {
@@ -2892,7 +2827,17 @@ function toast(msg, type = 'info') {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
   el.innerHTML = `<i class="fas ${icons[type]}"></i> ${msg}`;
-  document.getElementById('toast-wrap').appendChild(el);
+  
+  // Try to find toast-wrap, create it if it doesn't exist
+  let toastWrap = document.getElementById('toast-wrap');
+  if (!toastWrap) {
+    toastWrap = document.createElement('div');
+    toastWrap.id = 'toast-wrap';
+    toastWrap.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;';
+    document.body.appendChild(toastWrap);
+  }
+  
+  toastWrap.appendChild(el);
   setTimeout(() => el.remove(), 3200);
 }
 
@@ -2904,11 +2849,6 @@ function applyEnhancedTheme() {
   const toggle = document.getElementById('darkModeToggle');
   if (toggle) toggle.innerHTML = ENHANCED_STATE.darkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
 }
-document.getElementById('darkModeToggle')?.addEventListener('click', () => {
-  ENHANCED_STATE.darkMode = !ENHANCED_STATE.darkMode;
-  localStorage.setItem('darkMode', ENHANCED_STATE.darkMode ? 'dark' : 'light');
-  applyEnhancedTheme();
-});
 applyEnhancedTheme();
 
 /* ════════════════════════════════════════════════
@@ -3640,7 +3580,7 @@ function pushEnhancedMemory(mem) {
     createdAt: new Date().toISOString(),
   };
   ENHANCED_STATE.memories.unshift(entry);
-  saveEnhanced(); renderEnhancedMemory(); renderRecentMemoriesEnhanced(); renderCalendarEnhanced();
+  saveEnhanced(); renderCalendarEnhanced();
 
   const sbEl = document.getElementById('sb-memories'); if (sbEl) sbEl.textContent = ENHANCED_STATE.memories.length;
   const tmEl = document.getElementById('totalMemories'); if (tmEl) tmEl.textContent = ENHANCED_STATE.memories.length;
@@ -3658,31 +3598,6 @@ function pushEnhancedMemory(mem) {
 
 const MEM_ICONS = { note:'fa-sticky-note', voice:'fa-microphone', task:'fa-check-square', reminder:'fa-bell' };
 
-function renderEnhancedMemory() {
-  const list = document.getElementById('memList');
-  if (!list) return;
-  const last5 = ENHANCED_STATE.memories.slice(0, 5);
-  if (!last5.length) {
-    list.innerHTML = '<div class="empty-state"><i class="fas fa-brain"></i>No memories yet.</div>';
-    return;
-  }
-  list.innerHTML = last5.map(m => `
-  <div class="memory-card" onclick="showMemoryModalEnhanced('${m.id}')">
-    <div class="memory-card-header">
-      <div class="memory-card-icon">
-        <i class="fas ${MEM_ICONS[m.type] || 'fa-sticky-note'}"></i>
-      </div>
-      <div class="memory-card-meta">
-        <span class="memory-card-type">${m.type || 'note'}</span>
-        <span class="memory-card-time">${timeAgoEnhanced(m.createdAt)}</span>
-      </div>
-    </div>
-    <div class="memory-card-content">
-      <h4>${escHtml(m.content.substring(0, 80))}${m.content.length > 80 ? '…' : ''}</h4>
-      ${m.tags?.length ? `<div class="memory-card-tags">${m.tags.map(t => `<span class="memory-card-tag">${t}</span>`).join('')}</div>` : ''}
-    </div>
-  </div>`).join('');
-}
 
 /* ════════════════════════════════════════════════
    ORIGINAL MEMORY FORM + RECENT + SEARCH + CALENDAR (enhanced)
@@ -3710,21 +3625,6 @@ if (memoryForm) {
     if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
     toast('Memory saved!', 'success');
   });
-}
-
-function renderRecentMemoriesEnhanced() {
-  const container = document.getElementById('recentMemoriesList');
-  if (!container) return;
-  const last5 = ENHANCED_STATE.memories.slice(0, 5);
-  if (!last5.length) {
-    container.innerHTML = '<div class="empty-state"><i class="fas fa-clock"></i>No memories yet.</div>';
-    return;
-  }
-  container.innerHTML = last5.map(m => `
-  <div class="memory-card" onclick="showMemoryModalEnhanced('${m.id}')">
-    <h4>${escHtml(m.content.substring(0, 60))}${m.content.length > 60 ? '…' : ''}</h4>
-    <div class="meta">${m.type} · ${timeAgoEnhanced(m.createdAt)}</div>
-  </div>`).join('');
 }
 
 function showMemoryModalEnhanced(id) {
@@ -4202,25 +4102,6 @@ document.querySelectorAll('.chart-tab').forEach(tab => {
       expChartEnhanced.update();
     }
   });
-});
-
-/* ════════════════════════════════════════════════
-   QUICK NOTE MODAL
-════════════════════════════════════════════════ */
-document.getElementById('addQuickNote')?.addEventListener('click', () => {
-  document.getElementById('noteModal')?.classList.add('open');
-  document.getElementById('noteContent')?.focus();
-});
-document.getElementById('noteModalClose')?.addEventListener('click', () => document.getElementById('noteModal')?.classList.remove('open'));
-document.getElementById('noteModal')?.addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
-document.getElementById('saveNoteBtn')?.addEventListener('click', () => {
-  const content = document.getElementById('noteContent')?.value.trim();
-  if (!content) return toast('Please write something!', 'error');
-  const tags = document.getElementById('noteTags')?.value.split(',').map(s => s.trim()).filter(Boolean) || [];
-  pushEnhancedMemory({ content, type:'note', tags });
-  const noteContent = document.getElementById('noteContent'); if (noteContent) noteContent.value = '';
-  const noteTags = document.getElementById('noteTags'); if (noteTags) noteTags.value = '';
-  document.getElementById('noteModal')?.classList.remove('open');
   toast('Note saved to memory!', 'success');
 });
 
@@ -4666,8 +4547,6 @@ function escHtml(str) {
 function enhancedInit() {
   renderEnhancedTasks();
   renderEnhancedExpenses();
-  renderEnhancedMemory();
-  renderRecentMemoriesEnhanced();
   renderCalendarEnhanced();
   
   // Delay chart building to ensure DOM is ready
@@ -4696,7 +4575,7 @@ window.addEventListener('resize', updateSidebarToggleIcon);
 /* =========================================================================
    MONGODB + TWO ASSISTANTS CONTROLLER
    Chat Assistant -> /api/chat -> phi3:mini
-   Hey Assistant voice-only -> /api/voice-assistant -> llama2
+   Hey Assistant voice-only -> /api/voice-assistant -> phi3:mini
    ========================================================================= */
 (function initMongoDashboardController() {
   const apiBase = API_BASE_URL;
@@ -4827,8 +4706,6 @@ window.addEventListener('resize', updateSidebarToggleIcon);
       mood: memory.mood || 'neutral',
       createdAt: memory.created_at || new Date().toISOString(),
     }));
-    renderEnhancedMemory();
-    renderRecentMemoriesEnhanced();
     renderCalendarEnhanced();
   }
 
@@ -4918,13 +4795,22 @@ window.addEventListener('resize', updateSidebarToggleIcon);
     addBubble('user', message);
     input.value = '';
 
+    // Add typing indicator
+    const typingBubble = document.createElement('div');
+    typingBubble.className = 'chat-msg bot typing-indicator';
+    typingBubble.innerHTML = 'Thinking...';
+    chatBody.appendChild(typingBubble);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
     try {
       const data = await apiJson('/chat', {
         method: 'POST',
         body: JSON.stringify({ message }),
       });
+      chatBody.removeChild(typingBubble);
       addBubble('bot', data.reply || data.response || 'No response returned.');
     } catch (error) {
+      chatBody.removeChild(typingBubble);
       addBubble('bot', error.message || 'Error getting reply.');
     }
   };
@@ -4932,6 +4818,7 @@ window.addEventListener('resize', updateSidebarToggleIcon);
   function overrideChatInputs() {
     const hub = document.getElementById('hubTextInput');
     const hubSend = document.getElementById('hubSendBtn');
+    const chatInput = document.getElementById('chatInput');
     const submitHub = event => {
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -4944,6 +4831,13 @@ window.addEventListener('resize', updateSidebarToggleIcon);
     hub?.addEventListener('keydown', event => {
       if (event.key === 'Enter') submitHub(event);
     }, true);
+    
+    chatInput?.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        window.sendMessage();
+      }
+    });
   }
 
   function initWakeWordVoiceAssistant() {
@@ -4996,7 +4890,7 @@ window.addEventListener('resize', updateSidebarToggleIcon);
             }
           } catch (error) {
             logVoiceEnhanced(transcript, error.message);
-            speakVoiceReply(error.message);
+            speakVoiceReply("I'm having trouble connecting to the server. Please check your internet connection and try again.");
           }
         }
       };

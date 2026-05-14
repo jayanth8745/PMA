@@ -6,6 +6,7 @@
     <title>Login - Personal Memory Assistant</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -136,6 +137,9 @@
     <div id="notification" class="notification">
         <span id="notificationText"></span>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-wrap" style="position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script src="script.js"></script>
 </body>

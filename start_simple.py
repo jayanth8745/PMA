@@ -82,13 +82,13 @@ def main():
     
     # Open browser
     print("🌐 Opening browser...")
-    webbrowser.open("http://localhost:3000/login.html")
+    webbrowser.open("http://localhost:3000/index.html")
     
     print("\n" + "=" * 60)
     print("🎉 Application is running!")
     print("📍 Backend: http://localhost:5000")
     print("📍 Frontend: http://localhost:3000")
-    print("📍 Login: http://localhost:3000/login.html")
+    print("📍 Home: http://localhost:3000/index.html")
     print("📍 Dashboard: http://localhost:3000/dashboard.html")
     print("\n💡 Say 'Hey Assistant' to activate voice assistant")
     print("💡 Press Ctrl+C to stop the application")

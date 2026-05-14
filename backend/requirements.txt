@@ -8,3 +8,6 @@ edge-tts
 pyttsx3
 marshmallow
 requests
+speechrecognition
+pyaudio
+pipwin

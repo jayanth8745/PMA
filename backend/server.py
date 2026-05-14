@@ -8,19 +8,30 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from pymongo import MongoClient
 
-
 ROOT_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = ROOT_DIR / "frontend"
 
 load_dotenv(ROOT_DIR / "backend" / ".env")
 
 from chatbot import CHAT_MODEL, VOICE_MODEL, chat_assistant_reply, voice_assistant_reply
+from agents.voice_agent import VoiceAssistantAgent
 
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
+
+# Initialize Voice Agent
+voice_agent = VoiceAssistantAgent()
 CORS(app)
 
 mongo_client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"), serverSelectionTimeoutMS=2500)
 db = mongo_client[os.getenv("DB_NAME", "personal_memory_assistant")]
+
+# Create indexes for faster queries
+try:
+    db.memories.create_index([("user_id", 1), ("created_at", -1)])
+    db.tasks.create_index([("user_id", 1), ("created_at", -1)])
+    db.expenses.create_index([("user_id", 1), ("created_at", -1)])
+except Exception as e:
+    print(f"Warning: Failed to create indexes: {e}")
 
 
 def now_utc():
@@ -353,19 +364,46 @@ def voice_assistant():
     payload = parse_json()
     wake_phrase = (payload.get("wake_phrase") or "Hey Assistant").lower()
     transcript = payload.get("transcript") or payload.get("text") or payload.get("command") or ""
+    user_id = get_user_id_from_auth() or "demo_user"
+
     if wake_phrase not in transcript.lower() and not payload.get("activated"):
         return ok({"activated": False, "reply": "", "response": "", "model": VOICE_MODEL})
 
     clean_transcript = transcript.lower().replace(wake_phrase, "", 1).strip() or transcript
-    reply = voice_assistant_reply(clean_transcript, context=collection_context())
-    db.conversations.insert_one({
-        "type": "voice",
-        "model": VOICE_MODEL,
-        "user_message": transcript,
-        "assistant_reply": reply,
-        "created_at": now_utc(),
-    })
+    reply = voice_assistant_reply(clean_transcript, context=collection_context(user_id))
+
+    try:
+        db.conversations.insert_one({
+            "type": "voice",
+            "model": VOICE_MODEL,
+            "user_id": user_id,
+            "user_message": transcript,
+            "assistant_reply": reply,
+            "created_at": now_utc(),
+        })
+    except Exception as error:
+        print(f"Failed to save voice assistant conversation: {error}")
+
     return ok({"activated": True, "reply": reply, "response": reply, "model": VOICE_MODEL})
+
+
+@app.route("/api/voice", methods=["POST"])
+def voice_chat():
+    payload = parse_json()
+    text = payload.get("text") or payload.get("command") or payload.get("transcript") or ""
+    user_id = get_user_id_from_auth() or payload.get("user_id") or "demo_user"
+
+    reply = voice_agent.route_request(
+        user_id=user_id,
+        text=text
+    )
+
+    return ok({
+        "success": True,
+        "reply": reply,
+        "response": reply,
+        "model": VOICE_MODEL
+    })
 
 
 @app.route("/api/voice-memory", methods=["POST"])
@@ -393,9 +431,34 @@ def voice_memory():
 @app.route("/api/voice/command", methods=["POST"])
 def legacy_chat_routes():
     payload = parse_json()
-    text = payload.get("command") or payload.get("query") or payload.get("text") or payload.get("message") or ""
-    reply = chat_assistant_reply(text, context=collection_context())
-    return ok({"action": "chat", "reply": reply, "response": reply, "model": CHAT_MODEL})
+    text = (payload.get("command") or payload.get("query") or payload.get("text") or payload.get("message") or "").strip()
+    if not text:
+        return ok({"action": "chat", "reply": "Please say that again.", "response": "Please say that again.", "model": VOICE_MODEL})
+    
+    user_id = get_user_id_from_auth()
+    if not user_id:
+        # Use demo user for testing
+        user_id = "demo_user"
+    
+    # Use voice agent for voice commands
+    reply = voice_agent.route_request(
+        user_id=user_id,
+        text=text
+    )
+    
+    try:
+        db.conversations.insert_one({
+            "type": "voice",
+            "model": VOICE_MODEL,
+            "user_id": user_id,
+            "user_message": text,
+            "assistant_reply": reply,
+            "created_at": now_utc(),
+        })
+    except Exception as error:
+        print(f"Failed to save conversation: {error}")
+    
+    return ok({"action": "chat", "reply": reply, "response": reply, "model": VOICE_MODEL})
 
 
 @app.route("/api/memories", methods=["GET", "POST"])

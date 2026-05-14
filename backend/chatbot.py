@@ -7,7 +7,7 @@ from ai.prompts import SYSTEM_PROMPT
 
 
 CHAT_MODEL = os.getenv("CHAT_MODEL") or os.getenv("OLLAMA_MODEL") or "phi3:mini"
-VOICE_MODEL = os.getenv("VOICE_MODEL") or "llama2"
+VOICE_MODEL = os.getenv("VOICE_MODEL") or os.getenv("OLLAMA_MODEL") or "phi3:mini"
 OLLAMA_HOST = os.getenv("OLLAMA_HOST") or "http://127.0.0.1:11434"
 
 

@@ -341,7 +341,6 @@ body {
     padding-right: 0.15rem;
 }
 
-#recentMemoriesList .memory-card,
 #searchResults .memory-card {
     border-left: 4px solid var(--primary-color);
     padding: 1rem;
@@ -349,7 +348,6 @@ body {
     cursor: pointer;
 }
 
-#recentMemoriesList .memory-card h4,
 #searchResults .memory-card h4 {
     color: var(--text-primary);
     line-height: 1.35;
@@ -357,7 +355,6 @@ body {
     overflow-wrap: anywhere;
 }
 
-#recentMemoriesList .memory-card .meta,
 #searchResults .memory-card .meta {
     color: var(--text-secondary);
     font-size: 0.82rem;
@@ -479,9 +476,7 @@ body {
 }
 
 .memory-grid > #section-memory-creation,
-.memory-grid > #section-memory-search,
-.memory-grid > #section-recent-memories,
-.memory-grid > #section-last-memories {
+.memory-grid > #section-memory-search {
     grid-column: span 2;
 }
 
@@ -693,11 +688,6 @@ body {
 
 .memory-grid > #section-memory-creation,
 .memory-grid > #section-memory-search {
-    grid-column: span 2;
-}
-
-.memory-grid > #section-recent-memories,
-.memory-grid > #section-last-memories {
     grid-column: span 2;
 }
 
@@ -5973,7 +5963,6 @@ html {
     padding-right: 0.15rem;
 }
 
-#recentMemoriesList .memory-card,
 #searchResults .memory-card {
     border-left: 4px solid var(--primary-color);
     padding: 1rem;
@@ -5981,7 +5970,6 @@ html {
     cursor: pointer;
 }
 
-#recentMemoriesList .memory-card h4,
 #searchResults .memory-card h4 {
     color: var(--text-primary);
     line-height: 1.35;
@@ -5989,7 +5977,6 @@ html {
     overflow-wrap: anywhere;
 }
 
-#recentMemoriesList .memory-card .meta,
 #searchResults .memory-card .meta {
     color: var(--text-secondary);
     font-size: 0.82rem;

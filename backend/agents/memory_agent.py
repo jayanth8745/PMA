@@ -1,5 +1,5 @@
 import ollama
-from db.database import db
+from backend.db.db_driver import db
 
 class MemoryAgent:
     def __init__(self, model="phi3:mini"):
